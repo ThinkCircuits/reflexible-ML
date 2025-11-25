@@ -10,7 +10,7 @@ import json
 import sys
 from pathlib import Path
 
-def chat_with_vllm(host="localhost", port=8000, prompt_file=None, system_prompt_file=None):
+def chat_with_vllm(host="localhost", port=8000, prompt_file=None, system_prompt_file=None, temperature=0.1):
     """Interactive chat session with vLLM server"""
 
     base_url = f"http://{host}:{port}"
@@ -73,7 +73,7 @@ def chat_with_vllm(host="localhost", port=8000, prompt_file=None, system_prompt_
                 "model": model_name,
                 "messages": conversation_history,
                 "max_tokens": 4096,
-                "temperature": 0.7,
+                "temperature": temperature,
                 "stream": True
             }
 
@@ -130,6 +130,7 @@ def chat_with_vllm(host="localhost", port=8000, prompt_file=None, system_prompt_
         print(f"System prompt: {system_prompt_file}")
     print("Type 'quit', 'exit', or Ctrl+C to exit")
     print("Type 'clear' to start a new conversation")
+    print("Type 'history' to view conversation history")
     print("="*80 + "\n")
 
     while True:
@@ -145,8 +146,22 @@ def chat_with_vllm(host="localhost", port=8000, prompt_file=None, system_prompt_
                 break
 
             if user_input.lower() == 'clear':
-                conversation_history = []
-                print("\n✓ Conversation cleared\n")
+                # Preserve system prompt if it exists
+                system_messages = [m for m in conversation_history if m.get("role") == "system"]
+                conversation_history = system_messages
+                print("\n✓ Conversation cleared (system prompt preserved)\n")
+                continue
+
+            if user_input.lower() == 'history':
+                print(f"\n--- Conversation History ({len(conversation_history)} messages) ---")
+                for i, msg in enumerate(conversation_history):
+                    role = msg.get("role", "unknown")
+                    content = msg.get("content", "")
+                    # Truncate long messages for display
+                    preview = content[:100] + "..." if len(content) > 100 else content
+                    preview = preview.replace("\n", "\\n")
+                    print(f"  [{i}] {role}: {preview}")
+                print("--- End History ---\n")
                 continue
 
             # Add user message to history
@@ -160,7 +175,7 @@ def chat_with_vllm(host="localhost", port=8000, prompt_file=None, system_prompt_
                 "model": model_name,
                 "messages": conversation_history,
                 "max_tokens": 2048,
-                "temperature": 0.7,
+                "temperature": temperature,
                 "stream": True
             }
 
@@ -212,10 +227,19 @@ def chat_with_vllm(host="localhost", port=8000, prompt_file=None, system_prompt_
             break
         except requests.exceptions.Timeout:
             print("\n❌ Request timed out. The model might be overloaded.")
+            # Remove the failed user message from history
+            if conversation_history and conversation_history[-1].get("role") == "user":
+                conversation_history.pop()
         except requests.exceptions.RequestException as e:
             print(f"\n❌ Request error: {e}")
+            # Remove the failed user message from history
+            if conversation_history and conversation_history[-1].get("role") == "user":
+                conversation_history.pop()
         except Exception as e:
             print(f"\n❌ Unexpected error: {e}")
+            # Remove the failed user message from history
+            if conversation_history and conversation_history[-1].get("role") == "user":
+                conversation_history.pop()
 
 def main():
     parser = argparse.ArgumentParser(
@@ -272,9 +296,16 @@ Examples:
         help='File containing the system prompt (optional)'
     )
 
+    parser.add_argument(
+        '--temperature',
+        type=float,
+        default=0.1,
+        help='Temperature for generation (default: 0.1)'
+    )
+
     args = parser.parse_args()
 
-    chat_with_vllm(args.host, args.port, args.prompt_file, args.system_prompt)
+    chat_with_vllm(args.host, args.port, args.prompt_file, args.system_prompt, args.temperature)
 
 if __name__ == "__main__":
     main()
