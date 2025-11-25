@@ -1,0 +1,41 @@
+# Virtual environments
+venv/
+venv-*/
+.venv/
+env/
+ENV/
+
+# Model directories (too large for git)
+deepseek-coder-v2-lite-instruct/
+deepseek-coder-v2-lite-instruct-fp8/
+deepseek-coder-v2-lite-instruct-fp4/
+*-instruct/
+*-instruct-fp*/
+*-instruct-int*/
+
+# Log directories
+logs/
+sparse_logs/
+*.log
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Model weights and checkpoints
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+.cache/
