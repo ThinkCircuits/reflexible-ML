@@ -5,6 +5,7 @@ Serves static files with CORS support.
 Uses ThreadingHTTPServer for concurrent connections.
 Auto-generates self-signed certificate for camera access.
 Includes proxy for vLLM API to avoid mixed content issues.
+Includes HTTP->HTTPS redirect server on port 8080.
 """
 
 import http.server
@@ -16,6 +17,7 @@ import ssl
 import subprocess
 import urllib.request
 import urllib.error
+import threading
 from pathlib import Path
 
 # Backend URLs
@@ -156,6 +158,65 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
     allow_reuse_address = True
 
 
+class RedirectHandler(http.server.BaseHTTPRequestHandler):
+    """Handler that redirects all HTTP requests to HTTPS."""
+
+    https_port = 8443  # Will be set dynamically
+
+    def do_GET(self):
+        self.redirect_to_https()
+
+    def do_POST(self):
+        self.redirect_to_https()
+
+    def do_HEAD(self):
+        self.redirect_to_https()
+
+    def redirect_to_https(self):
+        """Redirect to HTTPS on the configured port."""
+        host = self.headers.get('Host', 'localhost')
+        # Remove port from host if present
+        if ':' in host:
+            host = host.split(':')[0]
+
+        https_url = f"https://{host}:{self.https_port}{self.path}"
+
+        self.send_response(301)
+        self.send_header('Location', https_url)
+        self.send_header('Content-Type', 'text/html')
+        self.end_headers()
+
+        body = f'''<!DOCTYPE html>
+<html>
+<head><title>Redirecting...</title></head>
+<body>
+<p>Redirecting to <a href="{https_url}">{https_url}</a></p>
+<script>window.location.href = "{https_url}";</script>
+</body>
+</html>'''
+        self.wfile.write(body.encode())
+
+    def log_message(self, format, *args):
+        print(f"[Redirect] {args[0]}")
+
+    def address_string(self):
+        return self.client_address[0]
+
+
+def start_redirect_server(bind_addr, http_port, https_port):
+    """Start the HTTP->HTTPS redirect server in a separate thread."""
+    RedirectHandler.https_port = https_port
+
+    try:
+        redirect_server = ThreadingHTTPServer((bind_addr, http_port), RedirectHandler)
+        print(f"Redirect server listening on http://{bind_addr}:{http_port} -> https://...:{https_port}")
+        redirect_server.serve_forever()
+    except OSError as e:
+        print(f"Warning: Could not start redirect server on port {http_port}: {e}")
+    except Exception as e:
+        print(f"Redirect server error: {e}")
+
+
 def generate_self_signed_cert(cert_dir):
     """Generate a self-signed certificate for HTTPS."""
     cert_file = cert_dir / "server.crt"
@@ -194,11 +255,15 @@ def generate_self_signed_cert(cert_dir):
 def main():
     parser = argparse.ArgumentParser(description='Vision Demo HTTPS Server')
     parser.add_argument('-p', '--port', type=int, default=8443,
-                        help='Port to serve on (default: 8443)')
+                        help='HTTPS port to serve on (default: 8443)')
+    parser.add_argument('--http-port', type=int, default=8080,
+                        help='HTTP port for redirect server (default: 8080)')
     parser.add_argument('-b', '--bind', default='0.0.0.0',
                         help='Address to bind to (default: 0.0.0.0)')
     parser.add_argument('--no-ssl', action='store_true',
                         help='Disable HTTPS (use HTTP only)')
+    parser.add_argument('--no-redirect', action='store_true',
+                        help='Disable HTTP->HTTPS redirect server')
     parser.add_argument('--cert', type=str,
                         help='Path to SSL certificate file')
     parser.add_argument('--key', type=str,
@@ -223,6 +288,15 @@ def main():
             cert_dir = script_dir / ".ssl"
             cert_file, key_file = generate_self_signed_cert(cert_dir)
 
+    # Start HTTP->HTTPS redirect server in background thread
+    if use_ssl and not args.no_redirect:
+        redirect_thread = threading.Thread(
+            target=start_redirect_server,
+            args=(args.bind, args.http_port, args.port),
+            daemon=True
+        )
+        redirect_thread.start()
+
     with ThreadingHTTPServer((args.bind, args.port), handler) as httpd:
         if use_ssl:
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
@@ -237,6 +311,8 @@ def main():
         print(f"")
         print(f"Protocol: {protocol.upper()}")
         print(f"Serving on: {protocol}://{args.bind}:{args.port}")
+        if use_ssl and not args.no_redirect:
+            print(f"HTTP redirect: http://{args.bind}:{args.http_port} -> https://...:{args.port}")
         print(f"")
         print(f"Open in browser:")
         print(f"  Local:   {protocol}://localhost:{args.port}")
@@ -254,9 +330,13 @@ def main():
 
         if use_ssl:
             print(f"")
+            if not args.no_redirect:
+                print(f"HTTP access: http://localhost:{args.http_port} (auto-redirects to HTTPS)")
+            print(f"")
             print(f"NOTE: Using self-signed certificate.")
             print(f"      Your browser will show a security warning.")
             print(f"      Click 'Advanced' -> 'Proceed' to continue.")
+            print(f"      Do NOT use http:// on port {args.port} - use https:// or port {args.http_port}.")
 
         print(f"")
         print(f"Make sure the vLLM server is running:")

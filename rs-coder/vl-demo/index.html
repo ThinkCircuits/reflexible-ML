@@ -750,9 +750,9 @@
                             <circle cx="44" cy="76" r="1.3" fill="#fff" opacity="0.9"/>
                             <circle cx="80" cy="76" r="1.3" fill="#fff" opacity="0.9"/>
 
-                            <!-- Upper eyelids - for blinking animation -->
-                            <ellipse cx="42" cy="78" rx="10" ry="0" fill="url(#faceGradient)" id="leftEyelid"/>
-                            <ellipse cx="78" cy="78" rx="10" ry="0" fill="url(#faceGradient)" id="rightEyelid"/>
+                            <!-- Upper eyelids - for blinking animation (positioned at top of eye, expand downward) -->
+                            <ellipse cx="42" cy="72" rx="10" ry="0" fill="url(#faceGradient)" id="leftEyelid"/>
+                            <ellipse cx="78" cy="72" rx="10" ry="0" fill="url(#faceGradient)" id="rightEyelid"/>
 
                             <!-- Upper eyelid line/lash line -->
                             <path d="M32 74 Q37 71 42 70.5 Q47 71 52 74" stroke="#3d2e22" stroke-width="1.2" fill="none" stroke-linecap="round" id="leftLashLine"/>
@@ -915,7 +915,7 @@
         let isPlayingAudio = false;
         let currentAudio = null;
         let pendingSentence = '';
-        let failedAudioItem = null; // Store failed audio for retry after unlock
+        let failedAudioQueue = []; // Store failed audio queue for retry after unlock
         let ttsSequenceNumber = 0; // Monotonic sequence for ordering
         let nextExpectedSequence = 0; // Next sequence number to play
         let pendingAudioItems = new Map(); // Out-of-order items waiting to be queued
@@ -1036,19 +1036,21 @@
 
                 audioContextResumed = true;
 
-                // Check if there's failed audio to replay
-                if (failedAudioItem) {
-                    audioUnlockStatus.textContent = 'Playing audio...';
+                // Check if there's failed audio queue to replay
+                if (failedAudioQueue.length > 0) {
+                    const totalChunks = failedAudioQueue.length;
+                    audioUnlockStatus.textContent = `Playing ${totalChunks} audio chunk${totalChunks > 1 ? 's' : ''}...`;
                     audioUnlockStatus.style.color = '#00c853';
                     unlockAudioBtn.textContent = 'Audio Unlocked';
                     unlockAudioBtn.disabled = true;
                     unlockAudioBtn.classList.remove('btn-success');
                     unlockAudioBtn.classList.add('btn-secondary');
 
-                    // Put failed item back at front of queue and play
-                    ttsAudioQueue.unshift(failedAudioItem);
-                    failedAudioItem = null;
-                    console.log('Replaying failed audio after unlock');
+                    // Restore entire failed queue and play
+                    ttsAudioQueue = [...failedAudioQueue];
+                    failedAudioQueue = [];
+                    console.log(`Replaying ${totalChunks} failed audio chunks after unlock`);
+                    updateAudioQueueDisplay();
                     playNextAudio();
                 } else {
                     audioUnlockStatus.textContent = 'Audio unlocked! Ready to play.';
@@ -1168,26 +1170,31 @@
             const blinkDuration = 120; // ms for full close
             const holdDuration = 40;   // ms eyes closed
             const startTime = Date.now();
+            // Eyelid starts at top of eye (y=72), moves down to cover eye (y=78 center)
+            const eyelidTopY = 72;
+            const eyelidClosedY = 78; // Center of eye when fully closed
+            const maxRy = 6; // Fully covers the eye
 
             function blinkFrame() {
                 const elapsed = Date.now() - startTime;
                 const totalCycle = blinkDuration * 2 + holdDuration;
 
-                let eyelidRy;
+                let progress; // 0 = open, 1 = closed
                 if (elapsed < blinkDuration) {
                     // Closing - ease in
                     const t = elapsed / blinkDuration;
-                    eyelidRy = 6 * (t * t); // Quadratic ease in
+                    progress = t * t; // Quadratic ease in
                 } else if (elapsed < blinkDuration + holdDuration) {
                     // Holding closed
-                    eyelidRy = 6;
+                    progress = 1;
                 } else if (elapsed < totalCycle) {
                     // Opening - ease out
                     const t = (elapsed - blinkDuration - holdDuration) / blinkDuration;
-                    eyelidRy = 6 * (1 - t * t); // Quadratic ease out
+                    progress = 1 - t * t; // Quadratic ease out
                 } else {
-                    // Blink complete
-                    eyelidRy = 0;
+                    // Blink complete - reset to open position
+                    leftEyelid.setAttribute('cy', eyelidTopY.toString());
+                    rightEyelid.setAttribute('cy', eyelidTopY.toString());
                     leftEyelid.setAttribute('ry', '0');
                     rightEyelid.setAttribute('ry', '0');
 
@@ -1205,6 +1212,12 @@
                     return;
                 }
 
+                // Move eyelid down from top as it closes
+                const eyelidCy = eyelidTopY + (eyelidClosedY - eyelidTopY) * progress;
+                const eyelidRy = maxRy * progress;
+
+                leftEyelid.setAttribute('cy', eyelidCy.toFixed(1));
+                rightEyelid.setAttribute('cy', eyelidCy.toFixed(1));
                 leftEyelid.setAttribute('ry', eyelidRy.toFixed(1));
                 rightEyelid.setAttribute('ry', eyelidRy.toFixed(1));
 
@@ -1600,16 +1613,18 @@
                 // Use load() then play() for better mobile compatibility
                 currentAudio.load();
                 await currentAudio.play();
-                // Clear any failed item on success
-                failedAudioItem = null;
+                // Clear any failed queue on success
+                failedAudioQueue = [];
             } catch (err) {
                 console.error('Failed to play audio:', err);
                 setTTSStatus(`Audio error - tap Unlock Audio to retry`, true);
 
-                // Save failed item for retry - put current item back at front of queue
-                failedAudioItem = { url: item.url, text: item.text };
+                // Save the ENTIRE queue for retry (current item + remaining queue)
+                failedAudioQueue = [{ url: item.url, text: item.text, seq: item.seq }, ...ttsAudioQueue];
+                ttsAudioQueue = []; // Clear the main queue since it's saved in failedAudioQueue
 
-                audioUnlockStatus.textContent = 'Tap "Unlock Audio" to play speech';
+                const totalChunks = failedAudioQueue.length;
+                audioUnlockStatus.textContent = `Tap "Unlock Audio" to play ${totalChunks} audio chunk${totalChunks > 1 ? 's' : ''}`;
                 audioUnlockStatus.style.color = '#ffc107';
 
                 // Re-enable unlock button
@@ -1620,6 +1635,7 @@
 
                 stopMouthAnimation();
                 isPlayingAudio = false;
+                updateAudioQueueDisplay();
                 // Don't call playNextAudio - wait for user to unlock
             }
         }

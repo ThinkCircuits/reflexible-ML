@@ -17,7 +17,7 @@ import socketserver
 
 # Configuration
 DEFAULT_PORT = 7860
-DEFAULT_VOICE = os.path.expanduser("~/.local/share/piper-voices/en_US-lessac-medium.onnx")
+DEFAULT_VOICE = os.path.expanduser("~/.local/share/piper-voices/en_US-amy-medium.onnx")
 
 # Global voice object (loaded once, reused)
 voice = None
