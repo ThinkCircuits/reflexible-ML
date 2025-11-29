@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen2.5-VL + Piper TTS Demo</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #00d4ff;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #0f3460;
+        }
+
+        .panel h2 {
+            margin-bottom: 15px;
+            color: #00d4ff;
+            font-size: 1.2rem;
+        }
+
+        .video-container {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            aspect-ratio: 4/3;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #canvas {
+            display: none;
+        }
+
+        .snapshot-preview {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        #snapshot {
+            max-width: 200px;
+            border-radius: 4px;
+            border: 2px solid #0f3460;
+        }
+
+        .controls {
+            margin-top: 15px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            background: #1a1a2e;
+            color: #eee;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #00d4ff;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #00d4ff;
+            color: #1a1a2e;
+        }
+
+        .btn-primary:hover {
+            background: #00b8e6;
+        }
+
+        .btn-primary:disabled {
+            background: #555;
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #0f3460;
+            color: #eee;
+        }
+
+        .btn-secondary:hover {
+            background: #1a4a7a;
+        }
+
+        .btn-danger {
+            background: #e94560;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #d63050;
+        }
+
+        .btn-success {
+            background: #00c853;
+            color: #fff;
+        }
+
+        .btn-success:hover {
+            background: #00a844;
+        }
+
+        .autosend-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .autosend-controls input[type="number"] {
+            width: 100px;
+        }
+
+        .autosend-controls span {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        .response-panel {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .response-box {
+            flex: 1;
+            background: #1a1a2e;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+            min-height: 200px;
+            max-height: 350px;
+            white-space: pre-wrap;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .status-bar {
+            margin-top: 15px;
+            padding: 10px;
+            background: #1a1a2e;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .status-bar.error {
+            color: #e94560;
+            background: rgba(233, 69, 96, 0.1);
+        }
+
+        .status-bar.success {
+            color: #00c853;
+            background: rgba(0, 200, 83, 0.1);
+        }
+
+        .status-bar.loading {
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .config-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .config-row .control-group {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .streaming-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #00c853;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Debug Stats Panel */
+        .debug-panel {
+            margin-top: 15px;
+            background: #0d1b2a;
+            border: 1px solid #1b4332;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .debug-panel h3 {
+            color: #52b788;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .debug-panel h3::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #52b788;
+            border-radius: 50%;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .stat-item {
+            background: #1a1a2e;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #0f3460;
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #00d4ff;
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .stat-value.highlight {
+            color: #52b788;
+        }
+
+        .stat-value.warning {
+            color: #ffc107;
+        }
+
+        .stat-value.error {
+            color: #e94560;
+        }
+
+        /* Avatar Panel */
+        .avatar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #1a1a2e;
+            border-radius: 16px;
+            padding: 15px;
+            margin-bottom: 15px;
+            min-height: 220px;
+        }
+
+        .avatar-svg {
+            width: 130px;
+            height: 195px;
+            border-radius: 12px;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+        }
+
+        /* TTS Panel */
+        .tts-panel {
+            margin-top: 15px;
+            background: #1a0d2e;
+            border: 1px solid #4a1b6d;
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .tts-panel h3 {
+            color: #b388ff;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tts-panel h3::before {
+            content: '🔊';
+            font-size: 1rem;
+        }
+
+        .tts-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .tts-controls label {
+            color: #aaa;
+            font-size: 0.85rem;
+        }
+
+        .tts-controls input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .tts-controls select {
+            width: auto;
+            min-width: 120px;
+        }
+
+        .tts-status {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #b388ff;
+        }
+
+        .tts-status.speaking {
+            color: #00c853;
+        }
+
+        .tts-status.error {
+            color: #e94560;
+        }
+
+        .audio-queue {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .audio-chunk {
+            background: #4a1b6d;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            color: #b388ff;
+        }
+
+        .audio-chunk.playing {
+            background: #00c853;
+            color: #fff;
+        }
+
+        .audio-chunk.queued {
+            background: #0f3460;
+            color: #888;
+        }
+
+        .resolution-select {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .resolution-select select {
+            flex: 1;
+        }
+
+        .resolution-info {
+            font-size: 0.8rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Qwen2.5-VL + Piper TTS Demo</h1>
+
+        <div class="config-row">
+            <div class="control-group">
+                <label for="apiUrl">VLM API Endpoint</label>
+                <input type="text" id="apiUrl" value="">
+            </div>
+            <div class="control-group">
+                <label for="ttsUrl">TTS API Endpoint</label>
+                <input type="text" id="ttsUrl" value="">
+            </div>
+            <div class="control-group">
+                <label for="modelName">Model Name</label>
+                <input type="text" id="modelName" value="Qwen/Qwen2.5-VL-7B-Instruct">
+            </div>
+        </div>
+
+        <div class="main-layout">
+            <div class="panel">
+                <h2>Camera Input</h2>
+                <div class="video-container">
+                    <video id="webcam" autoplay playsinline></video>
+                </div>
+                <canvas id="canvas"></canvas>
+
+                <div class="snapshot-preview">
+                    <img id="snapshot" class="hidden" alt="Last captured frame">
+                </div>
+
+                <div class="controls">
+                    <div class="control-group">
+                        <label for="cameraSelect">Camera</label>
+                        <select id="cameraSelect">
+                            <option value="">Loading cameras...</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="resolution">Image Resolution</label>
+                        <div class="resolution-select">
+                            <select id="resolution">
+                                <option value="320x240">320x240 (QVGA) - Fastest</option>
+                                <option value="640x480" selected>640x480 (VGA) - Balanced</option>
+                                <option value="800x600">800x600 (SVGA)</option>
+                                <option value="1280x720">1280x720 (HD 720p)</option>
+                                <option value="1920x1080">1920x1080 (Full HD)</option>
+                            </select>
+                        </div>
+                        <div class="resolution-info" id="resolutionInfo">Current: 640x480 | Est. payload: ~50KB</div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="prompt">Prompt</label>
+                        <textarea id="prompt" placeholder="Describe what you see in the image...">What do you see in this image? Describe it in one or two sentences.</textarea>
+                    </div>
+
+                    <div class="button-row">
+                        <button id="sendBtn" class="btn-primary">Send</button>
+                        <button id="autosendBtn" class="btn-success">Start Autosend</button>
+                    </div>
+
+                    <div class="autosend-controls">
+                        <label for="interval">Interval:</label>
+                        <input type="number" id="interval" value="5000" min="500" step="100">
+                        <span>ms</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel response-panel">
+                <h2>LLM Response</h2>
+
+                <!-- Animated Avatar -->
+                <div class="avatar-container">
+                    <svg class="avatar-svg" viewBox="0 0 120 180" id="avatarSvg">
+                        <defs>
+                            <!-- Background gradient - soft warm sunset -->
+                            <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#4a3c6e"/>
+                                <stop offset="40%" style="stop-color:#6b4a7a"/>
+                                <stop offset="70%" style="stop-color:#8a5a6a"/>
+                                <stop offset="100%" style="stop-color:#c47a6a"/>
+                            </linearGradient>
+                            <!-- Soft bokeh/light effect -->
+                            <radialGradient id="bokeh1" cx="20%" cy="25%" r="30%">
+                                <stop offset="0%" style="stop-color:#ffffff; stop-opacity:0.15"/>
+                                <stop offset="100%" style="stop-color:#ffffff; stop-opacity:0"/>
+                            </radialGradient>
+                            <radialGradient id="bokeh2" cx="80%" cy="60%" r="25%">
+                                <stop offset="0%" style="stop-color:#ffd4b8; stop-opacity:0.12"/>
+                                <stop offset="100%" style="stop-color:#ffd4b8; stop-opacity:0"/>
+                            </radialGradient>
+                            <radialGradient id="bokeh3" cx="10%" cy="80%" r="20%">
+                                <stop offset="0%" style="stop-color:#b8d4ff; stop-opacity:0.1"/>
+                                <stop offset="100%" style="stop-color:#b8d4ff; stop-opacity:0"/>
+                            </radialGradient>
+                            <!-- Gradient for hair -->
+                            <linearGradient id="hairGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#5a3d2b"/>
+                                <stop offset="50%" style="stop-color:#3d2817"/>
+                                <stop offset="100%" style="stop-color:#2a1a0f"/>
+                            </linearGradient>
+                            <!-- Hair highlight -->
+                            <linearGradient id="hairHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#6b4c35"/>
+                                <stop offset="50%" style="stop-color:#7a5a42"/>
+                                <stop offset="100%" style="stop-color:#6b4c35"/>
+                            </linearGradient>
+                            <!-- Gradient for face -->
+                            <radialGradient id="faceGradient" cx="50%" cy="35%" r="65%">
+                                <stop offset="0%" style="stop-color:#fce4d4"/>
+                                <stop offset="70%" style="stop-color:#f0d0b8"/>
+                                <stop offset="100%" style="stop-color:#e8c4a8"/>
+                            </radialGradient>
+                            <!-- Lip gradient -->
+                            <linearGradient id="lipGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#d4847a"/>
+                                <stop offset="100%" style="stop-color:#b86b62"/>
+                            </linearGradient>
+                            <!-- Eye gradient for depth -->
+                            <radialGradient id="irisGradient" cx="30%" cy="30%" r="70%">
+                                <stop offset="0%" style="stop-color:#7a9e8a"/>
+                                <stop offset="100%" style="stop-color:#4a6e5a"/>
+                            </radialGradient>
+                            <!-- Blouse/top gradient -->
+                            <linearGradient id="blouseGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#5a7a9a"/>
+                                <stop offset="50%" style="stop-color:#4a6a8a"/>
+                                <stop offset="100%" style="stop-color:#3a5a7a"/>
+                            </linearGradient>
+                            <!-- Blouse highlight -->
+                            <linearGradient id="blouseHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#6a8aaa"/>
+                                <stop offset="50%" style="stop-color:#7a9aba"/>
+                                <stop offset="100%" style="stop-color:#6a8aaa"/>
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Background -->
+                        <rect x="0" y="0" width="120" height="180" fill="url(#bgGradient)"/>
+                        <!-- Soft bokeh lights in background -->
+                        <ellipse cx="25" cy="40" rx="30" ry="30" fill="url(#bokeh1)"/>
+                        <ellipse cx="95" cy="100" rx="25" ry="25" fill="url(#bokeh2)"/>
+                        <ellipse cx="15" cy="140" rx="20" ry="20" fill="url(#bokeh3)"/>
+                        <ellipse cx="100" cy="30" rx="15" ry="15" fill="url(#bokeh1)"/>
+
+                        <!-- Shoulders - these stay static -->
+                        <g id="shouldersGroup">
+                            <!-- Long hair behind shoulders (static - starts at head level ~50, connected) -->
+                            <path d="M22 50 C16 75 14 110 18 150 Q26 172 42 180 L42 180 L36 125 C26 100 24 70 22 50 Z" fill="url(#hairGradient)"/>
+                            <path d="M98 50 C104 75 106 110 102 150 Q94 172 78 180 L78 180 L84 125 C94 100 96 70 98 50 Z" fill="url(#hairGradient)"/>
+                            <!-- Hair strands for realism -->
+                            <path d="M24 58 C20 90 22 130 28 165" stroke="#4a3020" stroke-width="0.8" fill="none" opacity="0.3"/>
+                            <path d="M28 55 C24 85 25 125 32 160" stroke="#5a4030" stroke-width="0.6" fill="none" opacity="0.25"/>
+                            <path d="M96 58 C100 90 98 130 92 165" stroke="#4a3020" stroke-width="0.8" fill="none" opacity="0.3"/>
+                            <path d="M92 55 C96 85 95 125 88 160" stroke="#5a4030" stroke-width="0.6" fill="none" opacity="0.25"/>
+
+                            <!-- SKIN: Shoulders underneath blouse - feminine rounded shape -->
+                            <path d="M-5 180 Q5 160 25 150 Q40 145 48 145 Q52 145 60 148 Q68 145 72 145 Q80 145 95 150 Q115 160 125 180 Z" fill="url(#faceGradient)"/>
+                            <!-- Shoulder/collarbone skin showing above neckline -->
+                            <path d="M30 148 Q45 144 60 148 Q75 144 90 148 Q80 155 60 158 Q40 155 30 148 Z" fill="url(#faceGradient)"/>
+                            <!-- Collarbone shadows -->
+                            <path d="M35 150 Q45 147 52 149" stroke="#dbb8a0" stroke-width="1" fill="none" opacity="0.3"/>
+                            <path d="M85 150 Q75 147 68 149" stroke="#dbb8a0" stroke-width="1" fill="none" opacity="0.3"/>
+
+                            <!-- BLOUSE: Over the shoulders with V-neckline -->
+                            <path d="M-5 180 Q8 162 28 154 Q38 152 45 155 L45 180 Z" fill="url(#blouseGradient)"/>
+                            <path d="M125 180 Q112 162 92 154 Q82 152 75 155 L75 180 Z" fill="url(#blouseGradient)"/>
+                            <!-- V-neckline blouse center -->
+                            <path d="M45 155 Q52 162 60 168 Q68 162 75 155 L75 180 L45 180 Z" fill="url(#blouseGradient)"/>
+                            <!-- Blouse neckline edge -->
+                            <path d="M45 155 Q52 162 60 168 Q68 162 75 155" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.6"/>
+                            <!-- Shoulder seams -->
+                            <path d="M30 156 Q18 162 5 168" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.5"/>
+                            <path d="M90 156 Q102 162 115 168" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.5"/>
+                            <!-- Blouse folds -->
+                            <path d="M52 168 Q55 175 54 180" stroke="#3a5a7a" stroke-width="1" fill="none" opacity="0.4"/>
+                            <path d="M68 168 Q65 175 66 180" stroke="#3a5a7a" stroke-width="1" fill="none" opacity="0.4"/>
+                        </g>
+
+                        <!-- Head group - everything that moves with head -->
+                        <g id="headGroup">
+                            <!-- Hair back/top of head - connects to side hair at ~50 -->
+                            <path d="M22 50 C22 30 40 20 60 20 C80 20 98 30 98 50 C98 58 94 62 88 65 L32 65 C26 62 22 58 22 50 Z" fill="url(#hairGradient)"/>
+
+                            <!-- Ears (partially hidden by hair) -->
+                            <ellipse cx="26" cy="82" rx="4" ry="7" fill="#f0d0b8"/>
+                            <ellipse cx="94" cy="82" rx="4" ry="7" fill="#f0d0b8"/>
+
+                            <!-- Neck - quick feminine flare to shoulders -->
+                            <path d="M48 125 C46 132 44 140 40 148 L80 148 C76 140 74 132 72 125" fill="url(#faceGradient)"/>
+                            <!-- Neck hollow at base -->
+                            <path d="M55 142 Q58 146 60 148 Q62 146 65 142" stroke="#d4a888" stroke-width="1.2" fill="none" opacity="0.35"/>
+
+                            <!-- Face - more defined contour with stronger jawline -->
+                            <path d="M25 80 Q25 55 60 52 Q95 55 95 80 Q95 100 82 115 Q70 128 60 130 Q50 128 38 115 Q25 100 25 80 Z" fill="url(#faceGradient)" id="faceShape"/>
+
+                            <!-- Cheekbone highlights -->
+                            <path d="M28 85 Q32 78 38 76" stroke="#fce8d8" stroke-width="2" fill="none" opacity="0.3" stroke-linecap="round"/>
+                            <path d="M92 85 Q88 78 82 76" stroke="#fce8d8" stroke-width="2" fill="none" opacity="0.3" stroke-linecap="round"/>
+
+                            <!-- Jaw line shadow - stronger definition -->
+                            <path d="M28 92 Q32 108 42 118 Q48 124 55 127" stroke="#d0a080" stroke-width="1.5" fill="none" opacity="0.4"/>
+                            <path d="M92 92 Q88 108 78 118 Q72 124 65 127" stroke="#d0a080" stroke-width="1.5" fill="none" opacity="0.4"/>
+
+                            <!-- Chin definition -->
+                            <path d="M50 125 Q55 129 60 130 Q65 129 70 125" stroke="#dbb8a0" stroke-width="1.2" fill="none" opacity="0.5"/>
+                            <!-- Chin highlight -->
+                            <ellipse cx="60" cy="124" rx="6" ry="3" fill="#fce8d8" opacity="0.15"/>
+
+                            <!-- Temple shadows -->
+                            <path d="M28 65 Q30 72 32 78" stroke="#dbb8a0" stroke-width="1" fill="none" opacity="0.3"/>
+                            <path d="M92 65 Q90 72 88 78" stroke="#dbb8a0" stroke-width="1" fill="none" opacity="0.3"/>
+
+                            <!-- Hair - flowing, connected, realistic -->
+                            <!-- Main bangs/fringe - side swept -->
+                            <path d="M25 60 C30 40 45 28 60 26 C75 28 90 40 95 60 C90 52 78 46 60 45 C42 46 30 52 25 60 Z" fill="url(#hairGradient)"/>
+                            <!-- Left side hair - flows down connected to bangs -->
+                            <path d="M25 60 C22 68 20 80 22 95 C24 110 20 130 18 150 C16 130 18 105 20 85 C21 72 23 64 25 60 Z" fill="url(#hairGradient)"/>
+                            <!-- Right side hair - flows down connected to bangs -->
+                            <path d="M95 60 C98 68 100 80 98 95 C96 110 100 130 102 150 C104 130 102 105 100 85 C99 72 97 64 95 60 Z" fill="url(#hairGradient)"/>
+                            <!-- Hair highlight strands -->
+                            <path d="M28 62 C26 75 25 95 24 115 C23 130 22 142 20 150" stroke="#6b4c35" stroke-width="1.5" fill="none" opacity="0.5"/>
+                            <path d="M32 58 C30 72 28 92 27 112" stroke="#7a5a42" stroke-width="1" fill="none" opacity="0.4"/>
+                            <path d="M92 62 C94 75 95 95 96 115 C97 130 98 142 100 150" stroke="#6b4c35" stroke-width="1.5" fill="none" opacity="0.5"/>
+                            <path d="M88 58 C90 72 92 92 93 112" stroke="#7a5a42" stroke-width="1" fill="none" opacity="0.4"/>
+                            <!-- Wispy strands near face -->
+                            <path d="M30 65 C28 72 27 80 28 88" stroke="#5a3d2b" stroke-width="0.6" fill="none" opacity="0.4"/>
+                            <path d="M90 65 C92 72 93 80 92 88" stroke="#5a3d2b" stroke-width="0.6" fill="none" opacity="0.4"/>
+
+                            <!-- Eyebrows - realistic with individual hair strokes -->
+                            <g id="leftBrow">
+                                <!-- Base brow shape -->
+                                <path d="M34 68 Q38 65 42 64.5 Q46 65 50 67" stroke="#4a3c30" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                                <!-- Individual hairs for texture -->
+                                <path d="M35 68 Q36 66 37 65" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.8"/>
+                                <path d="M38 67 Q39 65 40 64.5" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.7"/>
+                                <path d="M41 66.5 Q42 65 43 64.5" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.8"/>
+                                <path d="M44 66 Q45 65 46 65" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.7"/>
+                                <path d="M47 66.5 Q48 66 49 66.5" stroke="#5d4e42" stroke-width="0.5" fill="none" opacity="0.6"/>
+                            </g>
+                            <g id="rightBrow">
+                                <!-- Base brow shape -->
+                                <path d="M70 67 Q74 65 78 64.5 Q82 65 86 68" stroke="#4a3c30" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                                <!-- Individual hairs for texture -->
+                                <path d="M71 66.5 Q72 66 73 66.5" stroke="#5d4e42" stroke-width="0.5" fill="none" opacity="0.6"/>
+                                <path d="M74 66 Q75 65 76 65" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.7"/>
+                                <path d="M77 66.5 Q78 65 79 64.5" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.8"/>
+                                <path d="M80 67 Q81 65 82 64.5" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.7"/>
+                                <path d="M83 68 Q84 66 85 65" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.8"/>
+                            </g>
+
+                            <!-- Eyes - almond shaped with whites -->
+                            <ellipse cx="42" cy="78" rx="10" ry="6" fill="#fff" id="leftEyeWhite"/>
+                            <ellipse cx="78" cy="78" rx="10" ry="6" fill="#fff" id="rightEyeWhite"/>
+
+                            <!-- Iris with gradient -->
+                            <circle cx="42" cy="78" r="4.5" fill="url(#irisGradient)" id="leftIris"/>
+                            <circle cx="78" cy="78" r="4.5" fill="url(#irisGradient)" id="rightIris"/>
+
+                            <!-- Pupils -->
+                            <circle cx="42" cy="78" r="2.2" fill="#1a1a1a" id="leftPupil"/>
+                            <circle cx="78" cy="78" r="2.2" fill="#1a1a1a" id="rightPupil"/>
+
+                            <!-- Eye highlights -->
+                            <circle cx="44" cy="76" r="1.3" fill="#fff" opacity="0.9"/>
+                            <circle cx="80" cy="76" r="1.3" fill="#fff" opacity="0.9"/>
+
+                            <!-- Upper eyelids - for blinking animation -->
+                            <ellipse cx="42" cy="78" rx="10" ry="0" fill="url(#faceGradient)" id="leftEyelid"/>
+                            <ellipse cx="78" cy="78" rx="10" ry="0" fill="url(#faceGradient)" id="rightEyelid"/>
+
+                            <!-- Upper eyelid line/lash line -->
+                            <path d="M32 74 Q37 71 42 70.5 Q47 71 52 74" stroke="#3d2e22" stroke-width="1.2" fill="none" stroke-linecap="round" id="leftLashLine"/>
+                            <path d="M68 74 Q73 71 78 70.5 Q83 71 88 74" stroke="#3d2e22" stroke-width="1.2" fill="none" stroke-linecap="round" id="rightLashLine"/>
+
+                            <!-- Lower lash line - subtle -->
+                            <path d="M34 82 Q38 83.5 42 84 Q46 83.5 50 82" stroke="#6d5e52" stroke-width="0.6" fill="none" opacity="0.4"/>
+                            <path d="M70 82 Q74 83.5 78 84 Q82 83.5 86 82" stroke="#6d5e52" stroke-width="0.6" fill="none" opacity="0.4"/>
+
+                            <!-- Nose - subtle, natural -->
+                            <path d="M60 78 L60 92" stroke="#dbb8a0" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+                            <path d="M55 95 Q58 97 60 96 Q62 97 65 95" stroke="#dbb8a0" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+
+                            <!-- Cheek blush - subtle -->
+                            <ellipse cx="32" cy="92" rx="8" ry="4" fill="#f0a090" opacity="0.15"/>
+                            <ellipse cx="88" cy="92" rx="8" ry="4" fill="#f0a090" opacity="0.15"/>
+
+                            <!-- Lips - closed position (visible when not speaking) -->
+                            <g id="closedLips">
+                                <!-- Upper lip with cupid's bow -->
+                                <path d="M48 106 Q52 104 56 105 L60 103 L64 105 Q68 104 72 106 Q68 108 60 108 Q52 108 48 106 Z" fill="url(#lipGradient)"/>
+                                <!-- Lower lip -->
+                                <path d="M48 106 Q52 108 60 108 Q68 108 72 106 Q70 110 60 111 Q50 110 48 106 Z" fill="#c4736a"/>
+                            </g>
+
+                            <!-- Open mouth group (hidden by default) - lips stay connected at corners -->
+                            <g id="openMouth" opacity="0">
+                                <!-- Mouth interior/darkness - smaller opening -->
+                                <path d="M50 106 Q55 105 60 105 Q65 105 70 106 Q68 112 60 113 Q52 112 50 106 Z" fill="#3a1818" id="mouthInterior"/>
+
+                                <!-- Upper teeth - subtle curved row -->
+                                <path d="M52 106 Q56 105.5 60 105.5 Q64 105.5 68 106 L67 108.5 Q63 108 60 108 Q57 108 53 108.5 Z" fill="#f5f5ec" id="teeth" opacity="0.8"/>
+
+                                <!-- Tongue - only visible when wide open -->
+                                <ellipse cx="60" cy="111" rx="5" ry="2" fill="#c06060" id="tongue" opacity="0"/>
+
+                                <!-- Upper lip - stays mostly in place -->
+                                <path d="M48 106 Q52 104 56 105 L60 103 L64 105 Q68 104 72 106 Q68 106 60 105.5 Q52 106 48 106 Z" fill="url(#lipGradient)" id="upperLipOpen"/>
+
+                                <!-- Lower lip - connected at corners (48 and 72), center drops -->
+                                <path d="M48 106 Q52 110 60 112 Q68 110 72 106 Q70 111 60 113 Q50 111 48 106 Z" fill="#c4736a" id="lowerLipOpen"/>
+                            </g>
+
+                            <!-- Thinking smile - coy asymmetric side-smile -->
+                            <g id="thinkingSmile" opacity="0">
+                                <!-- Upper lip - slightly raised on right side -->
+                                <path d="M48 107 Q54 105 60 104.5 Q66 104 74 102 Q70 106 62 107 Q54 107.5 48 107 Z" fill="url(#lipGradient)"/>
+                                <!-- Lower lip - follows the asymmetric smile -->
+                                <path d="M48 107 Q54 107.5 62 107 Q70 106 74 102 Q72 106 64 108.5 Q54 109 48 107 Z" fill="#c4736a"/>
+                            </g>
+
+                        </g>
+                    </svg>
+                </div>
+
+                <div id="response" class="response-box">Waiting for input...</div>
+                <div id="status" class="status-bar">Ready</div>
+
+                <!-- TTS Panel -->
+                <div class="tts-panel">
+                    <h3>Text-to-Speech</h3>
+                    <div class="tts-controls">
+                        <input type="checkbox" id="ttsEnabled" checked>
+                        <label for="ttsEnabled">Enable TTS</label>
+
+                        <input type="checkbox" id="ttsStreaming" checked>
+                        <label for="ttsStreaming">Stream (speak while generating)</label>
+
+                        <button id="stopTtsBtn" class="btn-secondary" style="flex: 0; padding: 8px 16px;">Stop</button>
+                    </div>
+                    <div class="tts-status" id="ttsStatus">TTS ready</div>
+                    <div class="audio-queue" id="audioQueue"></div>
+                </div>
+
+                <!-- Debug Stats Panel -->
+                <div class="debug-panel">
+                    <h3>Performance Stats</h3>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Time to First Token</div>
+                            <div class="stat-value" id="statTTFT">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Total Latency</div>
+                            <div class="stat-value" id="statLatency">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Tokens/Second</div>
+                            <div class="stat-value" id="statTPS">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">TTS Latency</div>
+                            <div class="stat-value" id="statTTSLatency">--</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Sentences Spoken</div>
+                            <div class="stat-value highlight" id="statSentences">0</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Request Count</div>
+                            <div class="stat-value highlight" id="statRequests">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const webcam = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const snapshot = document.getElementById('snapshot');
+        const promptInput = document.getElementById('prompt');
+        const responseBox = document.getElementById('response');
+        const statusBar = document.getElementById('status');
+        const sendBtn = document.getElementById('sendBtn');
+        const autosendBtn = document.getElementById('autosendBtn');
+        const intervalInput = document.getElementById('interval');
+        const apiUrlInput = document.getElementById('apiUrl');
+        const ttsUrlInput = document.getElementById('ttsUrl');
+        const modelNameInput = document.getElementById('modelName');
+        const resolutionSelect = document.getElementById('resolution');
+        const resolutionInfo = document.getElementById('resolutionInfo');
+        const cameraSelect = document.getElementById('cameraSelect');
+
+        // TTS elements
+        const ttsEnabled = document.getElementById('ttsEnabled');
+        const ttsStreaming = document.getElementById('ttsStreaming');
+        const ttsStatus = document.getElementById('ttsStatus');
+        const audioQueue = document.getElementById('audioQueue');
+        const stopTtsBtn = document.getElementById('stopTtsBtn');
+
+        // Stats elements
+        const statTTFT = document.getElementById('statTTFT');
+        const statLatency = document.getElementById('statLatency');
+        const statTPS = document.getElementById('statTPS');
+        const statTTSLatency = document.getElementById('statTTSLatency');
+        const statSentences = document.getElementById('statSentences');
+        const statRequests = document.getElementById('statRequests');
+
+        // State
+        let stream = null;
+        let autosendInterval = null;
+        let isAutosending = false;
+        let isProcessing = false;
+        let requestCount = 0;
+        let sentenceCount = 0;
+        let currentResolution = { width: 640, height: 480 };
+        let selectedDeviceId = null;
+
+        // TTS State
+        let ttsAudioQueue = [];
+        let isPlayingAudio = false;
+        let currentAudio = null;
+        let pendingSentence = '';
+
+        // Avatar animation state
+        let audioContext = null;
+        let analyser = null;
+        let animationFrameId = null;
+        let blinkAnimationId = null;
+        let idleAnimationId = null;
+        let nextBlinkTime = 0;
+        let isBlinking = false;
+        let blinkProgress = 0;
+        let isThinking = false;
+        const headGroup = document.getElementById('headGroup');
+        const closedLips = document.getElementById('closedLips');
+        const openMouth = document.getElementById('openMouth');
+        const thinkingSmile = document.getElementById('thinkingSmile');
+        const mouthInterior = document.getElementById('mouthInterior');
+        const teeth = document.getElementById('teeth');
+        const tongue = document.getElementById('tongue');
+        const lowerLipOpen = document.getElementById('lowerLipOpen');
+        const leftPupil = document.getElementById('leftPupil');
+        const rightPupil = document.getElementById('rightPupil');
+        const leftIris = document.getElementById('leftIris');
+        const rightIris = document.getElementById('rightIris');
+        const leftEyelid = document.getElementById('leftEyelid');
+        const rightEyelid = document.getElementById('rightEyelid');
+        const leftEyeWhite = document.getElementById('leftEyeWhite');
+        const rightEyeWhite = document.getElementById('rightEyeWhite');
+
+        // Resolution presets
+        const resolutionPresets = {
+            '320x240': { width: 320, height: 240, estKB: 15 },
+            '640x480': { width: 640, height: 480, estKB: 50 },
+            '800x600': { width: 800, height: 600, estKB: 80 },
+            '1280x720': { width: 1280, height: 720, estKB: 150 },
+            '1920x1080': { width: 1920, height: 1080, estKB: 300 }
+        };
+
+        // ==================== Avatar Animation ====================
+
+        // Initialize audio context for analyzing playback
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.7;
+            }
+        }
+
+        // Blinking animation - runs continuously
+        function animateBlink() {
+            const now = Date.now();
+
+            // Schedule next blink with random variation (2-6 seconds)
+            if (now >= nextBlinkTime && !isBlinking) {
+                isBlinking = true;
+                blinkProgress = 0;
+                // Occasional double blink (20% chance)
+                const isDoubleBlink = Math.random() < 0.2;
+                animateBlinkCycle(isDoubleBlink);
+            }
+
+            blinkAnimationId = requestAnimationFrame(animateBlink);
+        }
+
+        // Animate a single blink cycle
+        function animateBlinkCycle(doubleBlink = false) {
+            const blinkDuration = 120; // ms for full close
+            const holdDuration = 40;   // ms eyes closed
+            const startTime = Date.now();
+
+            function blinkFrame() {
+                const elapsed = Date.now() - startTime;
+                const totalCycle = blinkDuration * 2 + holdDuration;
+
+                let eyelidRy;
+                if (elapsed < blinkDuration) {
+                    // Closing - ease in
+                    const t = elapsed / blinkDuration;
+                    eyelidRy = 6 * (t * t); // Quadratic ease in
+                } else if (elapsed < blinkDuration + holdDuration) {
+                    // Holding closed
+                    eyelidRy = 6;
+                } else if (elapsed < totalCycle) {
+                    // Opening - ease out
+                    const t = (elapsed - blinkDuration - holdDuration) / blinkDuration;
+                    eyelidRy = 6 * (1 - t * t); // Quadratic ease out
+                } else {
+                    // Blink complete
+                    eyelidRy = 0;
+                    leftEyelid.setAttribute('ry', '0');
+                    rightEyelid.setAttribute('ry', '0');
+
+                    if (doubleBlink) {
+                        // Do second blink after short pause
+                        setTimeout(() => animateBlinkCycle(false), 80);
+                    } else {
+                        isBlinking = false;
+                        // Schedule next blink: 2-6 seconds with variation
+                        const baseInterval = 3000 + Math.random() * 3000;
+                        // Add some irregularity
+                        const variation = (Math.random() - 0.5) * 1000;
+                        nextBlinkTime = Date.now() + baseInterval + variation;
+                    }
+                    return;
+                }
+
+                leftEyelid.setAttribute('ry', eyelidRy.toFixed(1));
+                rightEyelid.setAttribute('ry', eyelidRy.toFixed(1));
+
+                requestAnimationFrame(blinkFrame);
+            }
+
+            blinkFrame();
+        }
+
+        // Start blink animation loop
+        function startBlinkAnimation() {
+            if (!blinkAnimationId) {
+                nextBlinkTime = Date.now() + 1000 + Math.random() * 2000; // First blink in 1-3 sec
+                animateBlink();
+            }
+        }
+
+        // Stop blink animation
+        function stopBlinkAnimation() {
+            if (blinkAnimationId) {
+                cancelAnimationFrame(blinkAnimationId);
+                blinkAnimationId = null;
+            }
+            // Reset eyelids to open
+            leftEyelid.setAttribute('ry', '0');
+            rightEyelid.setAttribute('ry', '0');
+            isBlinking = false;
+        }
+
+        // Idle animation - subtle head movement when not speaking or thinking
+        function animateIdle() {
+            if (isPlayingAudio || isThinking) {
+                idleAnimationId = requestAnimationFrame(animateIdle);
+                return;
+            }
+
+            const time = Date.now() / 1000;
+
+            // Very subtle head movement - gentle swaying
+            const headX = Math.sin(time * 0.3) * 0.8 + Math.sin(time * 0.7) * 0.4;
+            const headY = Math.cos(time * 0.25) * 0.5 + Math.cos(time * 0.6) * 0.3;
+            const headRotate = Math.sin(time * 0.2) * 1.2;
+            headGroup.setAttribute('transform', `translate(${headX}, ${headY}) rotate(${headRotate}, 60, 90)`);
+
+            // Subtle eye movement - occasional glances
+            const eyeX = Math.sin(time * 0.5) * 1.5 + Math.sin(time * 1.3) * 0.5;
+            const eyeY = Math.cos(time * 0.4) * 0.8 + Math.cos(time * 1.1) * 0.3;
+
+            leftIris.setAttribute('cx', 42 + eyeX);
+            leftIris.setAttribute('cy', 78 + eyeY);
+            leftPupil.setAttribute('cx', 42 + eyeX);
+            leftPupil.setAttribute('cy', 78 + eyeY);
+            rightIris.setAttribute('cx', 78 + eyeX);
+            rightIris.setAttribute('cy', 78 + eyeY);
+            rightPupil.setAttribute('cx', 78 + eyeX);
+            rightPupil.setAttribute('cy', 78 + eyeY);
+
+            idleAnimationId = requestAnimationFrame(animateIdle);
+        }
+
+        // Start idle animation
+        function startIdleAnimation() {
+            if (!idleAnimationId) {
+                animateIdle();
+            }
+        }
+
+        // Stop idle animation
+        function stopIdleAnimation() {
+            if (idleAnimationId) {
+                cancelAnimationFrame(idleAnimationId);
+                idleAnimationId = null;
+            }
+        }
+
+        // Thinking animation - coy side-smile with slightly narrowed eyes
+        function startThinkingAnimation() {
+            isThinking = true;
+            // Show coy side-smile, hide normal lips
+            closedLips.setAttribute('opacity', '0');
+            thinkingSmile.setAttribute('opacity', '1');
+            // Slightly narrow the eye whites (ry from 6 to ~5)
+            leftEyeWhite.setAttribute('ry', '5');
+            rightEyeWhite.setAttribute('ry', '5');
+        }
+
+        function animateThinking() {
+            if (!isThinking) return;
+
+            const time = Date.now() / 1000;
+
+            // Very subtle head movement
+            const headX = Math.sin(time * 0.25) * 0.6;
+            const headY = Math.cos(time * 0.2) * 0.4;
+            const headRotate = Math.sin(time * 0.18) * 1.2;
+            headGroup.setAttribute('transform', `translate(${headX}, ${headY}) rotate(${headRotate}, 60, 90)`);
+
+            // Eyes looking slightly up and to the side - contemplative
+            const eyeX = 1.2 + Math.sin(time * 0.35) * 0.6;
+            const eyeY = -1 + Math.sin(time * 0.4) * 0.3;
+
+            leftIris.setAttribute('cx', 42 + eyeX);
+            leftIris.setAttribute('cy', 78 + eyeY);
+            leftPupil.setAttribute('cx', 42 + eyeX);
+            leftPupil.setAttribute('cy', 78 + eyeY);
+            rightIris.setAttribute('cx', 78 + eyeX);
+            rightIris.setAttribute('cy', 78 + eyeY);
+            rightPupil.setAttribute('cx', 78 + eyeX);
+            rightPupil.setAttribute('cy', 78 + eyeY);
+
+            // Very subtle eye narrowing variation
+            const eyeNarrow = 5 + Math.sin(time * 0.5) * 0.3;
+            leftEyeWhite.setAttribute('ry', eyeNarrow.toFixed(1));
+            rightEyeWhite.setAttribute('ry', eyeNarrow.toFixed(1));
+
+            if (isThinking) {
+                requestAnimationFrame(animateThinking);
+            }
+        }
+
+        function stopThinkingAnimation() {
+            isThinking = false;
+            // Reset lips
+            thinkingSmile.setAttribute('opacity', '0');
+            closedLips.setAttribute('opacity', '1');
+            // Reset eye whites to normal
+            leftEyeWhite.setAttribute('ry', '6');
+            rightEyeWhite.setAttribute('ry', '6');
+            // Reset head
+            headGroup.setAttribute('transform', '');
+            // Reset eyes to center
+            leftIris.setAttribute('cx', '42');
+            leftIris.setAttribute('cy', '78');
+            leftPupil.setAttribute('cx', '42');
+            leftPupil.setAttribute('cy', '78');
+            rightIris.setAttribute('cx', '78');
+            rightIris.setAttribute('cy', '78');
+            rightPupil.setAttribute('cx', '78');
+            rightPupil.setAttribute('cy', '78');
+        }
+
+        // Animate avatar mouth based on audio amplitude
+        function animateMouth() {
+            const time = Date.now() / 1000;
+
+            if (!analyser || !isPlayingAudio) {
+                // Reset to natural closed lips when not playing
+                closedLips.setAttribute('opacity', '1');
+                openMouth.setAttribute('opacity', '0');
+                // Reset head position
+                headGroup.setAttribute('transform', '');
+                return;
+            }
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+
+            // Calculate average amplitude (focus on speech frequencies)
+            let sum = 0;
+            const speechBins = Math.floor(analyser.frequencyBinCount * 0.4);
+            for (let i = 0; i < speechBins; i++) {
+                sum += dataArray[i];
+            }
+            const average = sum / speechBins;
+
+            // Normalize to 0-1 range - reduced for smaller mouth opening
+            const amplitude = Math.min(average / 110, 1);
+
+            // Subtle head movement while speaking
+            const headTiltX = Math.sin(time * 0.7) * 1.5;
+            const headTiltY = Math.cos(time * 0.5) * 0.8;
+            const headRotate = Math.sin(time * 0.4) * 2;
+            headGroup.setAttribute('transform', `translate(${headTiltX}, ${headTiltY}) rotate(${headRotate}, 60, 80)`);
+
+            // Transition from closed lips to open mouth
+            if (amplitude > 0.08) {
+                closedLips.setAttribute('opacity', '0');
+                openMouth.setAttribute('opacity', '1');
+
+                // Smaller, more realistic mouth opening
+                const openY = amplitude * 4; // Reduced from 6
+
+                // Mouth interior - lips stay connected at corners (x=48 and x=72)
+                const interiorPath = `M50 106 Q55 105 60 105 Q65 105 70 106 Q68 ${109 + openY * 0.6} 60 ${110 + openY} Q52 ${109 + openY * 0.6} 50 106 Z`;
+                mouthInterior.setAttribute('d', interiorPath);
+
+                // Lower lip - CONNECTED at corners, only center drops
+                // Corners stay at y=106 (matching upper lip corners at 48,106 and 72,106)
+                const centerDrop = openY * 0.9;
+                const lowerLipPath = `M48 106 Q52 ${108 + centerDrop * 0.5} 60 ${109 + centerDrop} Q68 ${108 + centerDrop * 0.5} 72 106 Q70 ${108 + centerDrop * 0.4} 60 ${110 + openY} Q50 ${108 + centerDrop * 0.4} 48 106 Z`;
+                lowerLipOpen.setAttribute('d', lowerLipPath);
+
+                // Tongue - only visible when more open
+                tongue.setAttribute('cy', 109 + openY * 0.5);
+                tongue.setAttribute('ry', 1.5 + openY * 0.2);
+                tongue.setAttribute('opacity', amplitude > 0.4 ? Math.min((amplitude - 0.4) * 1.5, 0.7).toFixed(2) : '0');
+
+                // Teeth - subtle visibility
+                teeth.setAttribute('opacity', amplitude > 0.15 ? Math.min(amplitude * 0.5, 0.5).toFixed(2) : '0');
+
+            } else {
+                closedLips.setAttribute('opacity', '1');
+                openMouth.setAttribute('opacity', '0');
+            }
+
+            // Natural eye movement - look around, occasional glances
+            const eyeBaseX = Math.sin(time * 0.8) * 2 + Math.sin(time * 2.1) * 0.5;
+            const eyeBaseY = Math.cos(time * 0.6) * 1 + Math.cos(time * 1.7) * 0.3;
+
+            leftIris.setAttribute('cx', 42 + eyeBaseX);
+            leftIris.setAttribute('cy', 78 + eyeBaseY);
+            leftPupil.setAttribute('cx', 42 + eyeBaseX);
+            leftPupil.setAttribute('cy', 78 + eyeBaseY);
+
+            rightIris.setAttribute('cx', 78 + eyeBaseX);
+            rightIris.setAttribute('cy', 78 + eyeBaseY);
+            rightPupil.setAttribute('cx', 78 + eyeBaseX);
+            rightPupil.setAttribute('cy', 78 + eyeBaseY);
+
+            animationFrameId = requestAnimationFrame(animateMouth);
+        }
+
+        // Start mouth animation loop
+        function startMouthAnimation() {
+            if (!animationFrameId) {
+                animateMouth();
+            }
+        }
+
+        // Stop mouth animation
+        function stopMouthAnimation() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+            // Reset to natural closed lips
+            closedLips.setAttribute('opacity', '1');
+            openMouth.setAttribute('opacity', '0');
+            // Reset eyes to center
+            leftIris.setAttribute('cx', '42');
+            leftIris.setAttribute('cy', '78');
+            leftPupil.setAttribute('cx', '42');
+            leftPupil.setAttribute('cy', '78');
+            rightIris.setAttribute('cx', '78');
+            rightIris.setAttribute('cy', '78');
+            rightPupil.setAttribute('cx', '78');
+            rightPupil.setAttribute('cy', '78');
+        }
+
+        // ==================== TTS Functions ====================
+
+        // Sentence boundary detection for streaming TTS
+        function extractCompleteSentences(text) {
+            // Match sentences ending with . ! ? followed by space or end
+            const sentenceRegex = /[^.!?]*[.!?]+(?:\s|$)/g;
+            const sentences = [];
+            let match;
+            let lastIndex = 0;
+
+            while ((match = sentenceRegex.exec(text)) !== null) {
+                sentences.push(match[0].trim());
+                lastIndex = sentenceRegex.lastIndex;
+            }
+
+            // Return sentences found and remaining text
+            const remaining = text.slice(lastIndex);
+            return { sentences, remaining };
+        }
+
+        // Queue audio for playback
+        function queueTTSAudio(audioBlob, sentenceText) {
+            const audioUrl = URL.createObjectURL(audioBlob);
+            ttsAudioQueue.push({ url: audioUrl, text: sentenceText });
+            updateAudioQueueDisplay();
+
+            if (!isPlayingAudio) {
+                playNextAudio();
+            }
+        }
+
+        // Play next audio in queue
+        function playNextAudio() {
+            if (ttsAudioQueue.length === 0) {
+                isPlayingAudio = false;
+                stopMouthAnimation();
+                setTTSStatus('TTS idle');
+                return;
+            }
+
+            isPlayingAudio = true;
+            const item = ttsAudioQueue.shift();
+            updateAudioQueueDisplay();
+
+            // Initialize audio context for animation
+            initAudioContext();
+
+            currentAudio = new Audio(item.url);
+            setTTSStatus(`Speaking: "${item.text.slice(0, 50)}${item.text.length > 50 ? '...' : ''}"`);
+
+            // Connect audio to analyser for mouth animation
+            const source = audioContext.createMediaElementSource(currentAudio);
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+
+            // Start mouth animation
+            startMouthAnimation();
+
+            currentAudio.onended = () => {
+                URL.revokeObjectURL(item.url);
+                currentAudio = null;
+                // Don't stop animation yet if more audio is queued
+                if (ttsAudioQueue.length === 0) {
+                    stopMouthAnimation();
+                }
+                playNextAudio();
+            };
+
+            currentAudio.onerror = (e) => {
+                console.error('Audio playback error:', e);
+                URL.revokeObjectURL(item.url);
+                currentAudio = null;
+                stopMouthAnimation();
+                playNextAudio();
+            };
+
+            currentAudio.play().catch(err => {
+                console.error('Failed to play audio:', err);
+                stopMouthAnimation();
+                playNextAudio();
+            });
+        }
+
+        // Stop all TTS playback
+        function stopTTS() {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+            ttsAudioQueue.forEach(item => URL.revokeObjectURL(item.url));
+            ttsAudioQueue = [];
+            isPlayingAudio = false;
+            pendingSentence = '';
+            stopMouthAnimation();
+            updateAudioQueueDisplay();
+            setTTSStatus('TTS stopped');
+        }
+
+        // Update audio queue display
+        function updateAudioQueueDisplay() {
+            audioQueue.innerHTML = '';
+            if (isPlayingAudio) {
+                const playing = document.createElement('span');
+                playing.className = 'audio-chunk playing';
+                playing.textContent = '▶ Playing';
+                audioQueue.appendChild(playing);
+            }
+            ttsAudioQueue.forEach((item, i) => {
+                const chunk = document.createElement('span');
+                chunk.className = 'audio-chunk queued';
+                chunk.textContent = `${i + 1}: ${item.text.slice(0, 20)}...`;
+                audioQueue.appendChild(chunk);
+            });
+        }
+
+        // Set TTS status
+        function setTTSStatus(message, isError = false) {
+            ttsStatus.textContent = message;
+            ttsStatus.className = 'tts-status' + (isError ? ' error' : (isPlayingAudio ? ' speaking' : ''));
+        }
+
+        // Synthesize speech using Piper TTS API (via proxy)
+        async function synthesizeSpeech(text) {
+            if (!text.trim()) return null;
+
+            const startTime = performance.now();
+
+            try {
+                // Use proxied TTS endpoint to avoid CORS issues
+                // Server proxies /tts/* to http://localhost:7860/*
+                const ttsUrl = ttsUrlInput.value;
+                const apiUrl = ttsUrl.replace(/\/$/, '') + '/api/tts';
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: text
+                    }),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`TTS API error: ${response.status} - ${errorText}`);
+                }
+
+                // Piper returns WAV audio directly
+                const blob = await response.blob();
+
+                const latency = performance.now() - startTime;
+                statTTSLatency.textContent = `${latency.toFixed(0)} ms`;
+                return blob;
+
+            } catch (err) {
+                console.error('TTS synthesis error:', err);
+                setTTSStatus(`TTS error: ${err.message}`, true);
+                return null;
+            }
+        }
+
+        // Process text for TTS (streaming or batch)
+        async function processTextForTTS(newContent, isComplete = false) {
+            if (!ttsEnabled.checked) return;
+
+            pendingSentence += newContent;
+
+            if (ttsStreaming.checked) {
+                // Streaming mode: synthesize complete sentences as they arrive
+                const { sentences, remaining } = extractCompleteSentences(pendingSentence);
+                pendingSentence = remaining;
+
+                for (const sentence of sentences) {
+                    if (sentence.trim().length > 2) {
+                        sentenceCount++;
+                        statSentences.textContent = sentenceCount.toString();
+                        setTTSStatus(`Synthesizing: "${sentence.slice(0, 30)}..."`);
+
+                        const audioBlob = await synthesizeSpeech(sentence);
+                        if (audioBlob) {
+                            queueTTSAudio(audioBlob, sentence);
+                        }
+                    }
+                }
+            }
+
+            // On completion, synthesize any remaining text
+            if (isComplete && pendingSentence.trim().length > 2) {
+                if (!ttsStreaming.checked) {
+                    // Batch mode: synthesize all at once
+                    setTTSStatus('Synthesizing full response...');
+                    const audioBlob = await synthesizeSpeech(pendingSentence);
+                    if (audioBlob) {
+                        sentenceCount++;
+                        statSentences.textContent = sentenceCount.toString();
+                        queueTTSAudio(audioBlob, pendingSentence);
+                    }
+                } else {
+                    // Streaming mode: synthesize remaining fragment
+                    sentenceCount++;
+                    statSentences.textContent = sentenceCount.toString();
+                    const audioBlob = await synthesizeSpeech(pendingSentence);
+                    if (audioBlob) {
+                        queueTTSAudio(audioBlob, pendingSentence);
+                    }
+                }
+                pendingSentence = '';
+            }
+        }
+
+        // ==================== Camera Functions ====================
+
+        function checkSecureContext() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                const isSecure = window.isSecureContext;
+                const protocol = window.location.protocol;
+                const hostname = window.location.hostname;
+
+                let msg = 'Camera API not available. ';
+                if (!isSecure) {
+                    msg += `Requires HTTPS or localhost. Current: ${protocol}//${hostname}`;
+                }
+
+                console.error(msg);
+                cameraSelect.innerHTML = '<option value="">Camera requires HTTPS</option>';
+                setStatus(msg, 'error');
+
+                responseBox.innerHTML = `<strong>Camera Access Blocked</strong>\n\n` +
+                    `Browsers require HTTPS for camera access (except localhost).\n\n` +
+                    `<strong>Options:</strong>\n` +
+                    `1. Access from the Jetson directly: http://localhost:8443\n` +
+                    `2. Use Chrome with security flag\n` +
+                    `3. Accept the self-signed certificate\n\n` +
+                    `Current URL: ${window.location.href}\n` +
+                    `Secure context: ${isSecure ? 'Yes' : 'No'}`;
+                return false;
+            }
+            return true;
+        }
+
+        async function enumerateCameras() {
+            if (!checkSecureContext()) return;
+
+            try {
+                await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+                cameraSelect.innerHTML = '';
+
+                if (videoDevices.length === 0) {
+                    cameraSelect.innerHTML = '<option value="">No cameras found</option>';
+                    setStatus('No cameras found', 'error');
+                    return;
+                }
+
+                videoDevices.forEach((device, index) => {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.textContent = device.label || `Camera ${index + 1}`;
+                    cameraSelect.appendChild(option);
+                });
+
+                selectedDeviceId = videoDevices[0].deviceId;
+                setStatus(`Found ${videoDevices.length} camera(s)`, 'success');
+            } catch (err) {
+                console.error('Error enumerating cameras:', err);
+                cameraSelect.innerHTML = '<option value="">Camera access denied</option>';
+                setStatus('Camera access denied: ' + err.message, 'error');
+            }
+        }
+
+        async function initWebcam() {
+            if (!checkSecureContext()) return;
+
+            try {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+
+                const res = resolutionPresets[resolutionSelect.value];
+                currentResolution = { width: res.width, height: res.height };
+
+                const constraints = {
+                    video: {
+                        width: { ideal: res.width },
+                        height: { ideal: res.height }
+                    },
+                    audio: false
+                };
+
+                if (selectedDeviceId) {
+                    constraints.video.deviceId = { exact: selectedDeviceId };
+                }
+
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                webcam.srcObject = stream;
+                updateResolutionInfo();
+                setStatus('Camera ready', 'success');
+            } catch (err) {
+                console.error('Webcam error:', err);
+                setStatus('Failed to access camera: ' + err.message, 'error');
+            }
+        }
+
+        function updateResolutionInfo() {
+            const res = resolutionPresets[resolutionSelect.value];
+            resolutionInfo.textContent = `Target: ${res.width}x${res.height} | Est. payload: ~${res.estKB}KB`;
+        }
+
+        cameraSelect.addEventListener('change', async () => {
+            selectedDeviceId = cameraSelect.value;
+            await initWebcam();
+        });
+
+        resolutionSelect.addEventListener('change', async () => {
+            updateResolutionInfo();
+            await initWebcam();
+        });
+
+        function captureFrame() {
+            const res = resolutionPresets[resolutionSelect.value];
+            canvas.width = res.width;
+            canvas.height = res.height;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(webcam, 0, 0, res.width, res.height);
+
+            const quality = res.width <= 640 ? 0.85 : 0.75;
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
+            snapshot.src = dataUrl;
+            snapshot.classList.remove('hidden');
+
+            return dataUrl;
+        }
+
+        // ==================== Status & Stats ====================
+
+        function setStatus(message, type = '') {
+            statusBar.textContent = message;
+            statusBar.className = 'status-bar';
+            if (type) {
+                statusBar.classList.add(type);
+            }
+        }
+
+        function updateStats(stats) {
+            if (stats.ttft !== undefined) {
+                statTTFT.textContent = `${stats.ttft.toFixed(0)} ms`;
+                statTTFT.className = 'stat-value' + (stats.ttft > 2000 ? ' warning' : stats.ttft > 5000 ? ' error' : '');
+            }
+            if (stats.latency !== undefined) {
+                statLatency.textContent = `${(stats.latency / 1000).toFixed(2)} s`;
+            }
+            if (stats.tps !== undefined) {
+                statTPS.textContent = stats.tps.toFixed(1);
+                statTPS.className = 'stat-value' + (stats.tps > 20 ? ' highlight' : stats.tps < 5 ? ' warning' : '');
+            }
+            statRequests.textContent = requestCount.toString();
+        }
+
+        function resetStats() {
+            statTTFT.textContent = '...';
+            statLatency.textContent = '...';
+            statTPS.textContent = '...';
+            statTTSLatency.textContent = '--';
+        }
+
+        // ==================== Main LLM Function ====================
+
+        async function sendToLLM() {
+            if (isProcessing) {
+                console.log('Already processing, skipping...');
+                return;
+            }
+
+            const prompt = promptInput.value.trim();
+            if (!prompt) {
+                setStatus('Please enter a prompt', 'error');
+                return;
+            }
+
+            // Reset TTS state for new request
+            stopTTS();
+            pendingSentence = '';
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+            resetStats();
+            setStatus('Capturing and sending...', 'loading');
+
+            // Start thinking animation while waiting for LLM
+            startThinkingAnimation();
+            animateThinking();
+
+            const startTime = performance.now();
+            let firstTokenTime = null;
+            let tokenCount = 0;
+
+            try {
+                const imageDataUrl = captureFrame();
+                const apiUrl = apiUrlInput.value;
+                const modelName = modelNameInput.value;
+
+                const requestBody = {
+                    model: modelName,
+                    messages: [
+                        {
+                            role: "user",
+                            content: [
+                                {
+                                    type: "image_url",
+                                    image_url: { url: imageDataUrl }
+                                },
+                                {
+                                    type: "text",
+                                    text: prompt
+                                }
+                            ]
+                        }
+                    ],
+                    max_tokens: 256,
+                    temperature: 0.7,
+                    stream: true
+                };
+
+                requestCount++;
+                updateStats({});
+
+                setStatus('Thinking...', 'loading');
+                responseBox.innerHTML = '<span class="streaming-indicator"></span>';
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`API error ${response.status}: ${errorText}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') continue;
+
+                            try {
+                                const json = JSON.parse(data);
+                                const content = json.choices?.[0]?.delta?.content;
+                                if (content) {
+                                    if (firstTokenTime === null) {
+                                        firstTokenTime = performance.now();
+                                        const ttft = firstTokenTime - startTime;
+                                        updateStats({ ttft });
+                                        // Stop thinking animation when first token arrives
+                                        stopThinkingAnimation();
+                                        setStatus('Responding...', 'loading');
+                                    }
+
+                                    fullResponse += content;
+                                    tokenCount++;
+                                    responseBox.textContent = fullResponse;
+
+                                    // Process for TTS (streaming)
+                                    processTextForTTS(content, false);
+
+                                    if (tokenCount % 5 === 0) {
+                                        const elapsed = performance.now() - firstTokenTime;
+                                        const tps = tokenCount / (elapsed / 1000);
+                                        updateStats({ tps });
+                                    }
+                                }
+                            } catch (e) {
+                                // Ignore parse errors
+                            }
+                        }
+                    }
+                }
+
+                // Final stats
+                const endTime = performance.now();
+                const totalLatency = endTime - startTime;
+                const generationTime = firstTokenTime ? endTime - firstTokenTime : totalLatency;
+                const finalTPS = tokenCount > 0 ? tokenCount / (generationTime / 1000) : 0;
+
+                updateStats({ latency: totalLatency, tps: finalTPS });
+
+                // Process remaining text for TTS
+                await processTextForTTS('', true);
+
+                if (!fullResponse) {
+                    responseBox.textContent = 'No response received';
+                }
+
+                const timestamp = new Date().toLocaleTimeString();
+                setStatus(`Response received at ${timestamp} (${tokenCount} tokens)`, 'success');
+
+            } catch (err) {
+                console.error('LLM error:', err);
+                responseBox.textContent = 'Error: ' + err.message;
+                setStatus('Error: ' + err.message, 'error');
+                // Stop thinking animation on error
+                stopThinkingAnimation();
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                // Make sure thinking is stopped
+                if (isThinking) {
+                    stopThinkingAnimation();
+                }
+            }
+        }
+
+        // ==================== Autosend ====================
+
+        function toggleAutosend() {
+            if (isAutosending) {
+                clearInterval(autosendInterval);
+                autosendInterval = null;
+                isAutosending = false;
+                autosendBtn.textContent = 'Start Autosend';
+                autosendBtn.classList.remove('btn-danger');
+                autosendBtn.classList.add('btn-success');
+                intervalInput.disabled = false;
+                setStatus('Autosend stopped', 'success');
+            } else {
+                const interval = parseInt(intervalInput.value) || 5000;
+                if (interval < 500) {
+                    setStatus('Interval must be at least 500ms', 'error');
+                    return;
+                }
+
+                isAutosending = true;
+                autosendBtn.textContent = 'Stop Autosend';
+                autosendBtn.classList.remove('btn-success');
+                autosendBtn.classList.add('btn-danger');
+                intervalInput.disabled = true;
+
+                sendToLLM();
+                autosendInterval = setInterval(() => {
+                    if (!isProcessing && !isPlayingAudio) {
+                        sendToLLM();
+                    }
+                }, interval);
+
+                setStatus(`Autosend active (every ${interval}ms)`, 'success');
+            }
+        }
+
+        // ==================== Event Listeners ====================
+
+        sendBtn.addEventListener('click', sendToLLM);
+        autosendBtn.addEventListener('click', toggleAutosend);
+        stopTtsBtn.addEventListener('click', stopTTS);
+
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                sendToLLM();
+            }
+        });
+
+        // ==================== Initialization ====================
+
+        function setDefaultUrls() {
+            const origin = window.location.origin;
+            apiUrlInput.value = `${origin}/v1/chat/completions`;
+            // TTS proxied through /tts/* on same origin
+            ttsUrlInput.value = `${origin}/tts`;
+        }
+
+        async function init() {
+            setDefaultUrls();
+            await enumerateCameras();
+            await initWebcam();
+            // Start avatar animations
+            startBlinkAnimation();
+            startIdleAnimation();
+        }
+
+        init();
+    </script>
+</body>
+</html>
