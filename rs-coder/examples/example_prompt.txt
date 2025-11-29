@@ -1,0 +1,1 @@
+Write a Python function that implements a binary search algorithm. Include docstrings and type hints.
