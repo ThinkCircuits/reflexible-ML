@@ -548,7 +548,7 @@
 
                 <!-- Animated Avatar -->
                 <div class="avatar-container">
-                    <svg class="avatar-svg" viewBox="0 0 120 180" id="avatarSvg">
+                    <svg class="avatar-svg" viewBox="0 0 120 160" id="avatarSvg">
                         <defs>
                             <!-- Background gradient - soft warm sunset -->
                             <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -613,7 +613,7 @@
                         </defs>
 
                         <!-- Background -->
-                        <rect x="0" y="0" width="120" height="180" fill="url(#bgGradient)"/>
+                        <rect x="0" y="0" width="120" height="160" fill="url(#bgGradient)"/>
                         <!-- Soft bokeh lights in background -->
                         <ellipse cx="25" cy="40" rx="30" ry="30" fill="url(#bokeh1)"/>
                         <ellipse cx="95" cy="100" rx="25" ry="25" fill="url(#bokeh2)"/>
@@ -623,50 +623,52 @@
                         <!-- Shoulders - these stay static -->
                         <g id="shouldersGroup">
                             <!-- Long hair behind shoulders (static - starts at head level ~50, connected) -->
-                            <path d="M22 50 C16 75 14 110 18 150 Q26 172 42 180 L42 180 L36 125 C26 100 24 70 22 50 Z" fill="url(#hairGradient)"/>
-                            <path d="M98 50 C104 75 106 110 102 150 Q94 172 78 180 L78 180 L84 125 C94 100 96 70 98 50 Z" fill="url(#hairGradient)"/>
+                            <path d="M22 50 C16 75 14 100 18 135 Q26 152 42 160 L42 160 L36 120 C26 100 24 70 22 50 Z" fill="url(#hairGradient)"/>
+                            <path d="M98 50 C104 75 106 100 102 135 Q94 152 78 160 L78 160 L84 120 C94 100 96 70 98 50 Z" fill="url(#hairGradient)"/>
                             <!-- Hair strands for realism -->
-                            <path d="M24 58 C20 90 22 130 28 165" stroke="#4a3020" stroke-width="0.8" fill="none" opacity="0.3"/>
-                            <path d="M28 55 C24 85 25 125 32 160" stroke="#5a4030" stroke-width="0.6" fill="none" opacity="0.25"/>
-                            <path d="M96 58 C100 90 98 130 92 165" stroke="#4a3020" stroke-width="0.8" fill="none" opacity="0.3"/>
-                            <path d="M92 55 C96 85 95 125 88 160" stroke="#5a4030" stroke-width="0.6" fill="none" opacity="0.25"/>
+                            <path d="M24 58 C20 85 22 115 28 145" stroke="#4a3020" stroke-width="0.8" fill="none" opacity="0.3"/>
+                            <path d="M28 55 C24 80 25 110 32 140" stroke="#5a4030" stroke-width="0.6" fill="none" opacity="0.25"/>
+                            <path d="M96 58 C100 85 98 115 92 145" stroke="#4a3020" stroke-width="0.8" fill="none" opacity="0.3"/>
+                            <path d="M92 55 C96 80 95 110 88 140" stroke="#5a4030" stroke-width="0.6" fill="none" opacity="0.25"/>
 
-                            <!-- SKIN: Shoulders underneath blouse - feminine rounded shape -->
-                            <path d="M-5 180 Q5 160 25 150 Q40 145 48 145 Q52 145 60 148 Q68 145 72 145 Q80 145 95 150 Q115 160 125 180 Z" fill="url(#faceGradient)"/>
-                            <!-- Shoulder/collarbone skin showing above neckline -->
-                            <path d="M30 148 Q45 144 60 148 Q75 144 90 148 Q80 155 60 158 Q40 155 30 148 Z" fill="url(#faceGradient)"/>
+                            <!-- SKIN: Small area of shoulders/collarbone visible in V-neckline -->
+                            <path d="M40 136 Q50 134 60 136 Q70 134 80 136 Q72 142 60 145 Q48 142 40 136 Z" fill="url(#faceGradient)"/>
                             <!-- Collarbone shadows -->
-                            <path d="M35 150 Q45 147 52 149" stroke="#dbb8a0" stroke-width="1" fill="none" opacity="0.3"/>
-                            <path d="M85 150 Q75 147 68 149" stroke="#dbb8a0" stroke-width="1" fill="none" opacity="0.3"/>
+                            <path d="M44 137 Q50 136 56 137" stroke="#dbb8a0" stroke-width="1" fill="none" opacity="0.3"/>
+                            <path d="M76 137 Q70 136 64 137" stroke="#dbb8a0" stroke-width="1" fill="none" opacity="0.3"/>
 
-                            <!-- BLOUSE: Over the shoulders with V-neckline -->
-                            <path d="M-5 180 Q8 162 28 154 Q38 152 45 155 L45 180 Z" fill="url(#blouseGradient)"/>
-                            <path d="M125 180 Q112 162 92 154 Q82 152 75 155 L75 180 Z" fill="url(#blouseGradient)"/>
+                            <!-- BLOUSE: Covers shoulders completely with V-neckline -->
+                            <path d="M-5 160 Q5 142 25 135 Q38 132 45 135 L45 160 Z" fill="url(#blouseGradient)"/>
+                            <path d="M125 160 Q115 142 95 135 Q82 132 75 135 L75 160 Z" fill="url(#blouseGradient)"/>
                             <!-- V-neckline blouse center -->
-                            <path d="M45 155 Q52 162 60 168 Q68 162 75 155 L75 180 L45 180 Z" fill="url(#blouseGradient)"/>
+                            <path d="M45 135 Q52 142 60 148 Q68 142 75 135 L75 160 L45 160 Z" fill="url(#blouseGradient)"/>
                             <!-- Blouse neckline edge -->
-                            <path d="M45 155 Q52 162 60 168 Q68 162 75 155" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.6"/>
+                            <path d="M45 135 Q52 142 60 148 Q68 142 75 135" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.6"/>
                             <!-- Shoulder seams -->
-                            <path d="M30 156 Q18 162 5 168" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.5"/>
-                            <path d="M90 156 Q102 162 115 168" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.5"/>
+                            <path d="M28 137 Q15 145 5 152" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.5"/>
+                            <path d="M92 137 Q105 145 115 152" stroke="#4a6a8a" stroke-width="0.8" fill="none" opacity="0.5"/>
                             <!-- Blouse folds -->
-                            <path d="M52 168 Q55 175 54 180" stroke="#3a5a7a" stroke-width="1" fill="none" opacity="0.4"/>
-                            <path d="M68 168 Q65 175 66 180" stroke="#3a5a7a" stroke-width="1" fill="none" opacity="0.4"/>
+                            <path d="M52 148 Q55 155 54 160" stroke="#3a5a7a" stroke-width="1" fill="none" opacity="0.4"/>
+                            <path d="M68 148 Q65 155 66 160" stroke="#3a5a7a" stroke-width="1" fill="none" opacity="0.4"/>
                         </g>
 
                         <!-- Head group - everything that moves with head -->
                         <g id="headGroup">
+                            <!-- Solid hair background - blocks background from showing through head AND neck -->
+                            <ellipse cx="60" cy="55" rx="42" ry="40" fill="#2a1a0f"/>
+                            <!-- Hair behind neck area - extends down to cover behind neck -->
+                            <path d="M25 70 L25 140 Q35 145 60 145 Q85 145 95 140 L95 70 Z" fill="#2a1a0f"/>
                             <!-- Hair back/top of head - connects to side hair at ~50 -->
-                            <path d="M22 50 C22 30 40 20 60 20 C80 20 98 30 98 50 C98 58 94 62 88 65 L32 65 C26 62 22 58 22 50 Z" fill="url(#hairGradient)"/>
+                            <path d="M18 50 C18 25 35 15 60 15 C85 15 102 25 102 50 C102 60 96 65 88 68 L32 68 C24 65 18 60 18 50 Z" fill="url(#hairGradient)"/>
 
                             <!-- Ears (partially hidden by hair) -->
                             <ellipse cx="26" cy="82" rx="4" ry="7" fill="#f0d0b8"/>
                             <ellipse cx="94" cy="82" rx="4" ry="7" fill="#f0d0b8"/>
 
                             <!-- Neck - quick feminine flare to shoulders -->
-                            <path d="M48 125 C46 132 44 140 40 148 L80 148 C76 140 74 132 72 125" fill="url(#faceGradient)"/>
+                            <path d="M48 125 C46 128 44 132 42 136 L78 136 C76 132 74 128 72 125" fill="url(#faceGradient)"/>
                             <!-- Neck hollow at base -->
-                            <path d="M55 142 Q58 146 60 148 Q62 146 65 142" stroke="#d4a888" stroke-width="1.2" fill="none" opacity="0.35"/>
+                            <path d="M55 130 Q58 133 60 135 Q62 133 65 130" stroke="#d4a888" stroke-width="1.2" fill="none" opacity="0.35"/>
 
                             <!-- Face - more defined contour with stronger jawline -->
                             <path d="M25 80 Q25 55 60 52 Q95 55 95 80 Q95 100 82 115 Q70 128 60 130 Q50 128 38 115 Q25 100 25 80 Z" fill="url(#faceGradient)" id="faceShape"/>
@@ -704,26 +706,32 @@
                             <path d="M30 65 C28 72 27 80 28 88" stroke="#5a3d2b" stroke-width="0.6" fill="none" opacity="0.4"/>
                             <path d="M90 65 C92 72 93 80 92 88" stroke="#5a3d2b" stroke-width="0.6" fill="none" opacity="0.4"/>
 
-                            <!-- Eyebrows - realistic with individual hair strokes -->
+                            <!-- Eyebrows - longer, thicker, realistic with individual hair strokes -->
                             <g id="leftBrow">
-                                <!-- Base brow shape -->
-                                <path d="M34 68 Q38 65 42 64.5 Q46 65 50 67" stroke="#4a3c30" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                                <!-- Base brow shape - longer and thicker -->
+                                <path d="M30 70 Q35 66 42 64.5 Q49 65 54 68" stroke="#4a3c30" stroke-width="2" fill="none" stroke-linecap="round"/>
+                                <!-- Secondary thickness layer -->
+                                <path d="M31 69 Q36 65.5 42 64 Q48 65 53 67.5" stroke="#3d3025" stroke-width="1.2" fill="none" opacity="0.6"/>
                                 <!-- Individual hairs for texture -->
-                                <path d="M35 68 Q36 66 37 65" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.8"/>
-                                <path d="M38 67 Q39 65 40 64.5" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.7"/>
-                                <path d="M41 66.5 Q42 65 43 64.5" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.8"/>
-                                <path d="M44 66 Q45 65 46 65" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.7"/>
-                                <path d="M47 66.5 Q48 66 49 66.5" stroke="#5d4e42" stroke-width="0.5" fill="none" opacity="0.6"/>
+                                <path d="M32 70 Q33 67 34 66" stroke="#5d4e42" stroke-width="0.8" fill="none" opacity="0.8"/>
+                                <path d="M36 68 Q37 65 38 64.5" stroke="#4a3c30" stroke-width="0.6" fill="none" opacity="0.7"/>
+                                <path d="M40 66.5 Q41 65 42 64.5" stroke="#5d4e42" stroke-width="0.7" fill="none" opacity="0.8"/>
+                                <path d="M44 66 Q45 65 46 64.5" stroke="#4a3c30" stroke-width="0.6" fill="none" opacity="0.7"/>
+                                <path d="M48 66 Q49 65.5 50 66" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.7"/>
+                                <path d="M51 67 Q52 66.5 53 67" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.6"/>
                             </g>
                             <g id="rightBrow">
-                                <!-- Base brow shape -->
-                                <path d="M70 67 Q74 65 78 64.5 Q82 65 86 68" stroke="#4a3c30" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+                                <!-- Base brow shape - longer and thicker -->
+                                <path d="M66 68 Q71 65 78 64.5 Q85 66 90 70" stroke="#4a3c30" stroke-width="2" fill="none" stroke-linecap="round"/>
+                                <!-- Secondary thickness layer -->
+                                <path d="M67 67.5 Q72 65 78 64 Q84 65.5 89 69" stroke="#3d3025" stroke-width="1.2" fill="none" opacity="0.6"/>
                                 <!-- Individual hairs for texture -->
-                                <path d="M71 66.5 Q72 66 73 66.5" stroke="#5d4e42" stroke-width="0.5" fill="none" opacity="0.6"/>
-                                <path d="M74 66 Q75 65 76 65" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.7"/>
-                                <path d="M77 66.5 Q78 65 79 64.5" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.8"/>
-                                <path d="M80 67 Q81 65 82 64.5" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.7"/>
-                                <path d="M83 68 Q84 66 85 65" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.8"/>
+                                <path d="M67 67 Q68 66.5 69 67" stroke="#4a3c30" stroke-width="0.5" fill="none" opacity="0.6"/>
+                                <path d="M70 66 Q71 65.5 72 66" stroke="#5d4e42" stroke-width="0.6" fill="none" opacity="0.7"/>
+                                <path d="M74 66 Q75 65 76 64.5" stroke="#4a3c30" stroke-width="0.6" fill="none" opacity="0.7"/>
+                                <path d="M78 66.5 Q79 65 80 64.5" stroke="#5d4e42" stroke-width="0.7" fill="none" opacity="0.8"/>
+                                <path d="M82 68 Q83 65 84 64.5" stroke="#4a3c30" stroke-width="0.6" fill="none" opacity="0.7"/>
+                                <path d="M86 70 Q87 67 88 66" stroke="#5d4e42" stroke-width="0.8" fill="none" opacity="0.8"/>
                             </g>
 
                             <!-- Eyes - almond shaped with whites -->
@@ -814,8 +822,11 @@
                         <label for="ttsStreaming">Stream (speak while generating)</label>
 
                         <button id="stopTtsBtn" class="btn-secondary" style="flex: 0; padding: 8px 16px;">Stop</button>
+                        <button id="unlockAudioBtn" class="btn-success" style="flex: 0; padding: 8px 16px;">Unlock Audio</button>
+                        <button id="testAudioBtn" class="btn-primary" style="flex: 0; padding: 8px 16px;">Test TTS</button>
                     </div>
                     <div class="tts-status" id="ttsStatus">TTS ready</div>
+                    <div id="audioUnlockStatus" style="font-size: 0.8rem; color: #888; margin-top: 5px;"></div>
                     <div class="audio-queue" id="audioQueue"></div>
                 </div>
 
@@ -877,6 +888,9 @@
         const ttsStatus = document.getElementById('ttsStatus');
         const audioQueue = document.getElementById('audioQueue');
         const stopTtsBtn = document.getElementById('stopTtsBtn');
+        const unlockAudioBtn = document.getElementById('unlockAudioBtn');
+        const testAudioBtn = document.getElementById('testAudioBtn');
+        const audioUnlockStatus = document.getElementById('audioUnlockStatus');
 
         // Stats elements
         const statTTFT = document.getElementById('statTTFT');
@@ -901,6 +915,10 @@
         let isPlayingAudio = false;
         let currentAudio = null;
         let pendingSentence = '';
+        let failedAudioItem = null; // Store failed audio for retry after unlock
+        let ttsSequenceNumber = 0; // Monotonic sequence for ordering
+        let nextExpectedSequence = 0; // Next sequence number to play
+        let pendingAudioItems = new Map(); // Out-of-order items waiting to be queued
 
         // Avatar animation state
         let audioContext = null;
@@ -940,6 +958,10 @@
 
         // ==================== Avatar Animation ====================
 
+        // Track audio sources to avoid re-creating them
+        let audioSourceMap = new WeakMap();
+        let audioContextResumed = false;
+
         // Initialize audio context for analyzing playback
         function initAudioContext() {
             if (!audioContext) {
@@ -950,9 +972,184 @@
             }
         }
 
+        // Resume audio context (required on mobile after user interaction)
+        async function resumeAudioContext() {
+            if (audioContext && audioContext.state === 'suspended') {
+                try {
+                    await audioContext.resume();
+                    audioContextResumed = true;
+                    console.log('AudioContext resumed');
+                } catch (e) {
+                    console.error('Failed to resume AudioContext:', e);
+                }
+            }
+        }
+
+        // Explicit audio unlock for mobile browsers
+        async function unlockAudio() {
+            try {
+                audioUnlockStatus.textContent = 'Unlocking audio...';
+                audioUnlockStatus.style.color = '#ffc107';
+
+                // Initialize audio context
+                initAudioContext();
+
+                // Resume if suspended
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                // Play a silent buffer to fully unlock audio
+                const buffer = audioContext.createBuffer(1, 1, 22050);
+                const source = audioContext.createBufferSource();
+                source.buffer = buffer;
+                source.connect(audioContext.destination);
+                source.start(0);
+
+                // Create an oscillator and play it briefly (works better on Chrome)
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.001; // Nearly silent
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.start(0);
+                oscillator.stop(audioContext.currentTime + 0.1);
+
+                // Also try playing a real Audio element with user interaction
+                // Use a longer silent WAV that Chrome accepts better
+                const silentWav = 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2teleRcAGo3V5Z+HOwwgjNHqpIxDEgUvms/soZFKGQk1oc7qoZVPHg09ps3onZhTIxNFq8zklJlXJxZLrsnjj5lbKxlQsMfggJldLxxVssXdd5xfMCBZtMPZcJ1hMyNct8LVaJ5jNiZguMHSYZ5lOSljusDPWp9nPCxmvL/NVKBpPy9ov76LUaFrQjJrwL2HT6JtRTVtwbyDTKNvSDhvw7t/SaRxSjtyxLp7RqsziWPZn2EcDjqV2eWdg0AWFDmY2OKVgEYVGT+b1+CSgEsZHz+e1N2PgE8cIkKh0tqNgFMfJUSj0NeLgFciKEem0NSIgFolK0mo0NGGgF4oLkuqz86DgGErMU6sz8yBgGQuNFCu0MuAYGcxNFGv0MuAYGg0NlSx0MyAYGo3OFay0cyAYGw5OVi00s2AYG07PFq10s2AYG8+Pl290s6AYHFBQGDh4dHPm3xbJxlMq8XTeZdcMCFXtcDJX5JePihecL7HXI9gQSlibrvFWYxiRCxlcLnDVotkRy9ocbfBU4hmSjJrc7W/UYZoTTVudLO9ToRqUDhweLC7TIJsUzt0e66ySn1uVj14f6yzSH1wWUB8g6qwRntzXER/hqiuRHl1X0eCiaasPHZ3Ykl/i6SrOnR5ZU2Cjaqqe5F2XUSAipumjY51WkB8hZSifHxzcnh3hpOhem1xb3JzeZCgd2dsbW1udY6edmRpa2pscI2cc2FmaGdpa4uabF5jZWRmaImYaVtgY2FjZYaVZlhdYF5gYoOTY1VaXltdX4CQYFJYXFlbXX2OXVBVW1dYW3qLWk1TWVRWWHeIV0pQV1FTVU5GQj1AOTo7Ozk4NjY1RERPT1NSWV9ka3F4f4aNlJuiqq+1u8HGy9DV2t3g4+Xo6uvs7e3t7u7u7u7u7u7u7e3s7Ovq6Obl4+Df3NrX1NHOysfDv7u3sq6ppqKenZycm5qamZiYl5eWlpaVlZWUlJSTk5OSkpKRkZCQkI+Pjo6NjYyMi4uKioiIh4eGhoWFhISCgoGBgH9+fXx7enl4d3Z1dHNycXBvbm1sa2ppaGdmZWRjYWBfXlxbWllYV1VUUU9OTEtJSEZFQ0JAQD49OzQdBz5rn8rXrmMRBDiS0N6igj8OCjCP0eGdgkQQCjWQz+KehEUSCDmSzuGahkcTBzuVzeGYhkkVBj6Yy+GViEsVBkGay+GUiU0WBkOcyuCTik8XBEWeyuCQi1EYBEifyuCPjFMZA0mhy9+OjVUZA0uj';
+                const silentAudio = new Audio(silentWav);
+                silentAudio.volume = 0.01;
+
+                // Wait for the audio to be playable
+                await new Promise((resolve, reject) => {
+                    silentAudio.oncanplaythrough = resolve;
+                    silentAudio.onerror = reject;
+                    setTimeout(resolve, 1000); // Timeout fallback
+                });
+
+                await silentAudio.play();
+
+                // Let it play briefly then pause
+                await new Promise(r => setTimeout(r, 100));
+                silentAudio.pause();
+
+                audioContextResumed = true;
+
+                // Check if there's failed audio to replay
+                if (failedAudioItem) {
+                    audioUnlockStatus.textContent = 'Playing audio...';
+                    audioUnlockStatus.style.color = '#00c853';
+                    unlockAudioBtn.textContent = 'Audio Unlocked';
+                    unlockAudioBtn.disabled = true;
+                    unlockAudioBtn.classList.remove('btn-success');
+                    unlockAudioBtn.classList.add('btn-secondary');
+
+                    // Put failed item back at front of queue and play
+                    ttsAudioQueue.unshift(failedAudioItem);
+                    failedAudioItem = null;
+                    console.log('Replaying failed audio after unlock');
+                    playNextAudio();
+                } else {
+                    audioUnlockStatus.textContent = 'Audio unlocked! Ready to play.';
+                    audioUnlockStatus.style.color = '#00c853';
+                    unlockAudioBtn.textContent = 'Audio Unlocked';
+                    unlockAudioBtn.disabled = true;
+                    unlockAudioBtn.classList.remove('btn-success');
+                    unlockAudioBtn.classList.add('btn-secondary');
+                }
+
+                console.log('Audio unlocked successfully, AudioContext state:', audioContext.state);
+                return true;
+            } catch (e) {
+                console.error('Failed to unlock audio:', e);
+                audioUnlockStatus.textContent = 'Failed: ' + e.message + '. Try tapping Send.';
+                audioUnlockStatus.style.color = '#e94560';
+                return false;
+            }
+        }
+
+        // Check if audio needs unlocking (detect mobile)
+        function checkAudioStatus() {
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            if (isMobile) {
+                audioUnlockStatus.textContent = 'Tap "Unlock Audio" then "Test TTS" to enable speech';
+                audioUnlockStatus.style.color = '#ffc107';
+            } else {
+                // On desktop, try to unlock automatically
+                initAudioContext();
+                if (audioContext.state === 'running') {
+                    audioUnlockStatus.textContent = 'Audio ready';
+                    audioUnlockStatus.style.color = '#00c853';
+                }
+            }
+        }
+
+        // Test TTS by fetching and playing real audio
+        async function testTTSAudio() {
+            try {
+                audioUnlockStatus.textContent = 'Testing TTS...';
+                audioUnlockStatus.style.color = '#ffc107';
+
+                // First unlock audio
+                await unlockAudio();
+
+                // Fetch TTS audio
+                const ttsUrl = ttsUrlInput.value.replace(/\/$/, '') + '/api/tts';
+                const response = await fetch(ttsUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: 'Hello! Audio is working.' })
+                });
+
+                if (!response.ok) {
+                    throw new Error('TTS request failed: ' + response.status);
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+
+                // Play the audio
+                const testAudio = new Audio();
+                testAudio.src = audioUrl;
+                testAudio.volume = 1.0;
+                testAudio.playsInline = true;
+                testAudio.setAttribute('playsinline', '');
+
+                testAudio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    audioUnlockStatus.textContent = 'Audio test successful!';
+                    audioUnlockStatus.style.color = '#00c853';
+                };
+
+                testAudio.onerror = (e) => {
+                    console.error('Test audio error:', e);
+                    audioUnlockStatus.textContent = 'Audio element error';
+                    audioUnlockStatus.style.color = '#e94560';
+                };
+
+                testAudio.load();
+                await testAudio.play();
+
+                audioUnlockStatus.textContent = 'Playing test audio...';
+                audioUnlockStatus.style.color = '#00c853';
+
+            } catch (e) {
+                console.error('Test TTS failed:', e);
+                audioUnlockStatus.textContent = 'Test failed: ' + e.message;
+                audioUnlockStatus.style.color = '#e94560';
+            }
+        }
+
         // Blinking animation - runs continuously
         function animateBlink() {
             const now = Date.now();
+
+            // Skip blinking during thinking (eyes are already narrowed)
+            if (isThinking) {
+                blinkAnimationId = requestAnimationFrame(animateBlink);
+                return;
+            }
 
             // Schedule next blink with random variation (2-6 seconds)
             if (now >= nextBlinkTime && !isBlinking) {
@@ -1083,15 +1280,15 @@
             }
         }
 
-        // Thinking animation - coy side-smile with slightly narrowed eyes
+        // Thinking animation - coy side-smile with more narrowed eyes
         function startThinkingAnimation() {
             isThinking = true;
             // Show coy side-smile, hide normal lips
             closedLips.setAttribute('opacity', '0');
             thinkingSmile.setAttribute('opacity', '1');
-            // Slightly narrow the eye whites (ry from 6 to ~5)
-            leftEyeWhite.setAttribute('ry', '5');
-            rightEyeWhite.setAttribute('ry', '5');
+            // Narrow the eye whites more (ry from 6 to 4)
+            leftEyeWhite.setAttribute('ry', '4');
+            rightEyeWhite.setAttribute('ry', '4');
         }
 
         function animateThinking() {
@@ -1118,8 +1315,8 @@
             rightPupil.setAttribute('cx', 78 + eyeX);
             rightPupil.setAttribute('cy', 78 + eyeY);
 
-            // Very subtle eye narrowing variation
-            const eyeNarrow = 5 + Math.sin(time * 0.5) * 0.3;
+            // Very subtle eye narrowing variation (base 4, slight variation)
+            const eyeNarrow = 4 + Math.sin(time * 0.5) * 0.2;
             leftEyeWhite.setAttribute('ry', eyeNarrow.toFixed(1));
             rightEyeWhite.setAttribute('ry', eyeNarrow.toFixed(1));
 
@@ -1149,11 +1346,14 @@
             rightPupil.setAttribute('cy', '78');
         }
 
+        // Track whether to use analyser or fallback animation
+        let useAudioAnalyser = true;
+
         // Animate avatar mouth based on audio amplitude
         function animateMouth() {
             const time = Date.now() / 1000;
 
-            if (!analyser || !isPlayingAudio) {
+            if (!isPlayingAudio) {
                 // Reset to natural closed lips when not playing
                 closedLips.setAttribute('opacity', '1');
                 openMouth.setAttribute('opacity', '0');
@@ -1162,19 +1362,36 @@
                 return;
             }
 
-            const dataArray = new Uint8Array(analyser.frequencyBinCount);
-            analyser.getByteFrequencyData(dataArray);
+            let amplitude;
 
-            // Calculate average amplitude (focus on speech frequencies)
-            let sum = 0;
-            const speechBins = Math.floor(analyser.frequencyBinCount * 0.4);
-            for (let i = 0; i < speechBins; i++) {
-                sum += dataArray[i];
+            if (useAudioAnalyser && analyser) {
+                // Use audio analyser for amplitude
+                const dataArray = new Uint8Array(analyser.frequencyBinCount);
+                analyser.getByteFrequencyData(dataArray);
+
+                // Calculate average amplitude (focus on speech frequencies)
+                let sum = 0;
+                const speechBins = Math.floor(analyser.frequencyBinCount * 0.4);
+                for (let i = 0; i < speechBins; i++) {
+                    sum += dataArray[i];
+                }
+                const average = sum / speechBins;
+
+                // Normalize to 0-1 range - reduced for smaller mouth opening
+                amplitude = Math.min(average / 110, 1);
+            } else {
+                // Fallback: simulate speech amplitude with varied sine waves
+                // Creates a realistic speaking pattern
+                amplitude = Math.abs(
+                    Math.sin(time * 8) * 0.3 +
+                    Math.sin(time * 12.5) * 0.25 +
+                    Math.sin(time * 17) * 0.15 +
+                    Math.sin(time * 23) * 0.1
+                ) * 0.8;
+                // Add pauses for more realistic speech
+                const pauseFactor = Math.sin(time * 2) > 0.7 ? 0.2 : 1.0;
+                amplitude *= pauseFactor;
             }
-            const average = sum / speechBins;
-
-            // Normalize to 0-1 range - reduced for smaller mouth opening
-            const amplitude = Math.min(average / 110, 1);
 
             // Subtle head movement while speaking
             const headTiltX = Math.sin(time * 0.7) * 1.5;
@@ -1231,7 +1448,8 @@
         }
 
         // Start mouth animation loop
-        function startMouthAnimation() {
+        function startMouthAnimation(withAnalyser = true) {
+            useAudioAnalyser = withAnalyser;
             if (!animationFrameId) {
                 animateMouth();
             }
@@ -1277,19 +1495,41 @@
             return { sentences, remaining };
         }
 
-        // Queue audio for playback
-        function queueTTSAudio(audioBlob, sentenceText) {
+        // Queue audio for playback with sequence ordering
+        function queueTTSAudio(audioBlob, sentenceText, sequenceNum) {
             const audioUrl = URL.createObjectURL(audioBlob);
-            ttsAudioQueue.push({ url: audioUrl, text: sentenceText });
-            updateAudioQueueDisplay();
+            const item = { url: audioUrl, text: sentenceText, seq: sequenceNum };
 
-            if (!isPlayingAudio) {
-                playNextAudio();
+            // If this is the next expected sequence, add to queue directly
+            if (sequenceNum === nextExpectedSequence) {
+                ttsAudioQueue.push(item);
+                nextExpectedSequence++;
+
+                // Check if we have any pending items that can now be added
+                while (pendingAudioItems.has(nextExpectedSequence)) {
+                    ttsAudioQueue.push(pendingAudioItems.get(nextExpectedSequence));
+                    pendingAudioItems.delete(nextExpectedSequence);
+                    nextExpectedSequence++;
+                }
+
+                updateAudioQueueDisplay();
+
+                if (!isPlayingAudio) {
+                    playNextAudio();
+                }
+            } else if (sequenceNum > nextExpectedSequence) {
+                // Out of order - store for later
+                console.log(`Audio seq ${sequenceNum} arrived out of order, expecting ${nextExpectedSequence}`);
+                pendingAudioItems.set(sequenceNum, item);
+            } else {
+                // Old sequence number (shouldn't happen, but handle it)
+                console.warn(`Ignoring old audio sequence ${sequenceNum}, already at ${nextExpectedSequence}`);
+                URL.revokeObjectURL(audioUrl);
             }
         }
 
         // Play next audio in queue
-        function playNextAudio() {
+        async function playNextAudio() {
             if (ttsAudioQueue.length === 0) {
                 isPlayingAudio = false;
                 stopMouthAnimation();
@@ -1301,19 +1541,40 @@
             const item = ttsAudioQueue.shift();
             updateAudioQueueDisplay();
 
-            // Initialize audio context for animation
-            initAudioContext();
-
-            currentAudio = new Audio(item.url);
             setTTSStatus(`Speaking: "${item.text.slice(0, 50)}${item.text.length > 50 ? '...' : ''}"`);
 
-            // Connect audio to analyser for mouth animation
-            const source = audioContext.createMediaElementSource(currentAudio);
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
+            // Create audio element - simple approach for maximum compatibility
+            currentAudio = new Audio();
+            currentAudio.src = item.url;
+            currentAudio.volume = 1.0;
+            currentAudio.playsInline = true; // Required for mobile Chrome
+            currentAudio.setAttribute('playsinline', ''); // Also set as attribute
 
-            // Start mouth animation
-            startMouthAnimation();
+            // Try to use analyser for lip sync, but don't require it
+            let useAnalyser = false;
+            try {
+                initAudioContext();
+                await resumeAudioContext();
+
+                // Only try MediaElementSource on desktop or if explicitly unlocked
+                if (audioContextResumed && audioContext.state === 'running') {
+                    // Check if we already created a source for this audio element
+                    if (!audioSourceMap.has(currentAudio)) {
+                        currentAudio.crossOrigin = 'anonymous';
+                        const source = audioContext.createMediaElementSource(currentAudio);
+                        source.connect(analyser);
+                        analyser.connect(audioContext.destination);
+                        audioSourceMap.set(currentAudio, source);
+                    }
+                    useAnalyser = true;
+                }
+            } catch (e) {
+                console.warn('Audio analyser not available, using fallback animation:', e);
+                useAnalyser = false;
+            }
+
+            // Start mouth animation (will use analyser if available, fallback otherwise)
+            startMouthAnimation(useAnalyser);
 
             currentAudio.onended = () => {
                 URL.revokeObjectURL(item.url);
@@ -1327,17 +1588,40 @@
 
             currentAudio.onerror = (e) => {
                 console.error('Audio playback error:', e);
+                audioUnlockStatus.textContent = 'Audio error - try Unlock Audio button';
+                audioUnlockStatus.style.color = '#e94560';
                 URL.revokeObjectURL(item.url);
                 currentAudio = null;
                 stopMouthAnimation();
                 playNextAudio();
             };
 
-            currentAudio.play().catch(err => {
+            try {
+                // Use load() then play() for better mobile compatibility
+                currentAudio.load();
+                await currentAudio.play();
+                // Clear any failed item on success
+                failedAudioItem = null;
+            } catch (err) {
                 console.error('Failed to play audio:', err);
+                setTTSStatus(`Audio error - tap Unlock Audio to retry`, true);
+
+                // Save failed item for retry - put current item back at front of queue
+                failedAudioItem = { url: item.url, text: item.text };
+
+                audioUnlockStatus.textContent = 'Tap "Unlock Audio" to play speech';
+                audioUnlockStatus.style.color = '#ffc107';
+
+                // Re-enable unlock button
+                unlockAudioBtn.disabled = false;
+                unlockAudioBtn.textContent = 'Unlock Audio';
+                unlockAudioBtn.classList.remove('btn-secondary');
+                unlockAudioBtn.classList.add('btn-success');
+
                 stopMouthAnimation();
-                playNextAudio();
-            });
+                isPlayingAudio = false;
+                // Don't call playNextAudio - wait for user to unlock
+            }
         }
 
         // Stop all TTS playback
@@ -1430,22 +1714,29 @@
                 const { sentences, remaining } = extractCompleteSentences(pendingSentence);
                 pendingSentence = remaining;
 
-                for (const sentence of sentences) {
-                    if (sentence.trim().length > 2) {
+                // Launch all TTS requests in parallel but with assigned sequence numbers
+                const synthesisPromises = sentences
+                    .filter(s => s.trim().length > 2)
+                    .map(sentence => {
+                        const seqNum = ttsSequenceNumber++;
                         sentenceCount++;
                         statSentences.textContent = sentenceCount.toString();
                         setTTSStatus(`Synthesizing: "${sentence.slice(0, 30)}..."`);
 
-                        const audioBlob = await synthesizeSpeech(sentence);
-                        if (audioBlob) {
-                            queueTTSAudio(audioBlob, sentence);
-                        }
-                    }
-                }
+                        return synthesizeSpeech(sentence).then(audioBlob => {
+                            if (audioBlob) {
+                                queueTTSAudio(audioBlob, sentence, seqNum);
+                            }
+                        });
+                    });
+
+                // Wait for all to complete (but they'll be queued in order due to sequence numbers)
+                await Promise.all(synthesisPromises);
             }
 
             // On completion, synthesize any remaining text
             if (isComplete && pendingSentence.trim().length > 2) {
+                const seqNum = ttsSequenceNumber++;
                 if (!ttsStreaming.checked) {
                     // Batch mode: synthesize all at once
                     setTTSStatus('Synthesizing full response...');
@@ -1453,7 +1744,7 @@
                     if (audioBlob) {
                         sentenceCount++;
                         statSentences.textContent = sentenceCount.toString();
-                        queueTTSAudio(audioBlob, pendingSentence);
+                        queueTTSAudio(audioBlob, pendingSentence, seqNum);
                     }
                 } else {
                     // Streaming mode: synthesize remaining fragment
@@ -1461,7 +1752,7 @@
                     statSentences.textContent = sentenceCount.toString();
                     const audioBlob = await synthesizeSpeech(pendingSentence);
                     if (audioBlob) {
-                        queueTTSAudio(audioBlob, pendingSentence);
+                        queueTTSAudio(audioBlob, pendingSentence, seqNum);
                     }
                 }
                 pendingSentence = '';
@@ -1644,6 +1935,9 @@
             // Reset TTS state for new request
             stopTTS();
             pendingSentence = '';
+            ttsSequenceNumber = 0;
+            nextExpectedSequence = 0;
+            pendingAudioItems.clear();
 
             isProcessing = true;
             sendBtn.disabled = true;
@@ -1823,12 +2117,27 @@
 
         // ==================== Event Listeners ====================
 
-        sendBtn.addEventListener('click', sendToLLM);
-        autosendBtn.addEventListener('click', toggleAutosend);
+        // Initialize audio context on first user interaction (required for mobile)
+        function initAudioOnInteraction() {
+            initAudioContext();
+            resumeAudioContext();
+        }
+
+        sendBtn.addEventListener('click', () => {
+            initAudioOnInteraction();
+            sendToLLM();
+        });
+        autosendBtn.addEventListener('click', () => {
+            initAudioOnInteraction();
+            toggleAutosend();
+        });
         stopTtsBtn.addEventListener('click', stopTTS);
+        unlockAudioBtn.addEventListener('click', unlockAudio);
+        testAudioBtn.addEventListener('click', testTTSAudio);
 
         promptInput.addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'Enter') {
+                initAudioOnInteraction();
                 sendToLLM();
             }
         });
@@ -1849,6 +2158,8 @@
             // Start avatar animations
             startBlinkAnimation();
             startIdleAnimation();
+            // Check audio status for mobile
+            checkAudioStatus();
         }
 
         init();
