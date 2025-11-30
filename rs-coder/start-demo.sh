@@ -111,15 +111,15 @@ wait_for_service() {
 
 ################################################################################
 # Service Commands
+# Commands run in bash so pane stays open on exit
 ################################################################################
 
 cmd_vllm() {
-    # Remove the read -p prompt for unattended start
-    echo "cd '$SCRIPTS_DIR' && exec ./jetson_deploy_vl.sh --port $VLLM_PORT 2>&1 | head -1000"
+    echo "cd '$SCRIPTS_DIR' && ./jetson_deploy_vl.sh --port $VLLM_PORT -y"
 }
 
 cmd_tts() {
-    echo "cd '$SCRIPT_DIR' && exec '$SCRIPT_DIR/tts-venv/bin/python' '$SCRIPTS_DIR/piper_tts_server.py' --port $TTS_PORT 2>&1"
+    echo "cd '$SCRIPT_DIR' && '$SCRIPT_DIR/tts-venv/bin/python' '$SCRIPTS_DIR/piper_tts_server.py' --port $TTS_PORT"
 }
 
 cmd_whisper() {
@@ -129,11 +129,11 @@ cmd_whisper() {
     if [ -d "$ct2_lib" ]; then
         ld_path="export LD_LIBRARY_PATH='$ct2_lib:\$LD_LIBRARY_PATH' && "
     fi
-    echo "cd '$SCRIPT_DIR' && ${ld_path}exec '$SCRIPT_DIR/whisper-venv/bin/python' '$SCRIPTS_DIR/whisper_ws_server.py' --port $WHISPER_PORT 2>&1"
+    echo "cd '$SCRIPT_DIR' && ${ld_path}'$SCRIPT_DIR/whisper-venv/bin/python' '$SCRIPTS_DIR/whisper_ws_server.py' --port $WHISPER_PORT"
 }
 
 cmd_web() {
-    echo "cd '$VLDEMO_DIR' && exec python3 server.py --port $WEB_HTTPS_PORT --http-port $WEB_HTTP_PORT 2>&1"
+    echo "cd '$VLDEMO_DIR' && python3 server.py --port $WEB_HTTPS_PORT --http-port $WEB_HTTP_PORT"
 }
 
 ################################################################################
@@ -162,12 +162,15 @@ start_session() {
     kill_session
 
     # Create new session with first pane
+    # We create panes with bash shell, then send commands via send-keys
+    # This ensures panes stay open when processes exit
     local first=true
     local pane_idx=0
 
     if [ "$START_VLLM" = true ] && [ "$first" = true ]; then
         print_info "Creating tmux session with vLLM pane..."
-        tmux new-session -d -s "$SESSION_NAME" -n "demo" "cd '$SCRIPTS_DIR' && exec ./jetson_deploy_vl.sh --port $VLLM_PORT -y 2>&1"
+        tmux new-session -d -s "$SESSION_NAME" -n "demo"
+        tmux send-keys -t "$SESSION_NAME:0.0" "$(cmd_vllm)" Enter
         first=false
         ((++pane_idx)) || true
     fi
@@ -175,11 +178,13 @@ start_session() {
     if [ "$START_TTS" = true ]; then
         if [ "$first" = true ]; then
             print_info "Creating tmux session with TTS pane..."
-            tmux new-session -d -s "$SESSION_NAME" -n "demo" "$(cmd_tts)"
+            tmux new-session -d -s "$SESSION_NAME" -n "demo"
+            tmux send-keys -t "$SESSION_NAME:0.0" "$(cmd_tts)" Enter
             first=false
         else
             print_info "Adding TTS pane..."
-            tmux split-window -t "$SESSION_NAME:0" -h "$(cmd_tts)"
+            tmux split-window -t "$SESSION_NAME:0" -h
+            tmux send-keys -t "$SESSION_NAME:0.$pane_idx" "$(cmd_tts)" Enter
         fi
         ((++pane_idx)) || true
     fi
@@ -187,11 +192,13 @@ start_session() {
     if [ "$START_WHISPER" = true ]; then
         if [ "$first" = true ]; then
             print_info "Creating tmux session with Whisper pane..."
-            tmux new-session -d -s "$SESSION_NAME" -n "demo" "$(cmd_whisper)"
+            tmux new-session -d -s "$SESSION_NAME" -n "demo"
+            tmux send-keys -t "$SESSION_NAME:0.0" "$(cmd_whisper)" Enter
             first=false
         else
             print_info "Adding Whisper pane..."
-            tmux split-window -t "$SESSION_NAME:0" -v "$(cmd_whisper)"
+            tmux split-window -t "$SESSION_NAME:0" -v
+            tmux send-keys -t "$SESSION_NAME:0.$pane_idx" "$(cmd_whisper)" Enter
         fi
         ((++pane_idx)) || true
     fi
@@ -199,11 +206,13 @@ start_session() {
     if [ "$START_WEB" = true ]; then
         if [ "$first" = true ]; then
             print_info "Creating tmux session with Web pane..."
-            tmux new-session -d -s "$SESSION_NAME" -n "demo" "$(cmd_web)"
+            tmux new-session -d -s "$SESSION_NAME" -n "demo"
+            tmux send-keys -t "$SESSION_NAME:0.0" "$(cmd_web)" Enter
             first=false
         else
             print_info "Adding Web server pane..."
-            tmux split-window -t "$SESSION_NAME:0" -v "$(cmd_web)"
+            tmux split-window -t "$SESSION_NAME:0" -v
+            tmux send-keys -t "$SESSION_NAME:0.$pane_idx" "$(cmd_web)" Enter
         fi
         ((++pane_idx)) || true
     fi
@@ -227,6 +236,34 @@ start_session() {
 }
 
 ################################################################################
+# Service Health Checks
+################################################################################
+
+is_vllm_healthy() {
+    curl -s "http://localhost:$VLLM_PORT/health" &>/dev/null
+}
+
+is_tts_healthy() {
+    curl -s "http://localhost:$TTS_PORT/health" &>/dev/null
+}
+
+is_whisper_healthy() {
+    ss -tlnp 2>/dev/null | grep -q ":$WHISPER_PORT " || \
+    netstat -tlnp 2>/dev/null | grep -q ":$WHISPER_PORT "
+}
+
+is_web_healthy() {
+    curl -sk "https://localhost:$WEB_HTTPS_PORT" &>/dev/null
+}
+
+# Get pane index by title
+get_pane_by_title() {
+    local title="$1"
+    tmux list-panes -t "$SESSION_NAME" -F '#{pane_index}:#{pane_title}' 2>/dev/null | \
+        grep ":${title}$" | cut -d: -f1
+}
+
+################################################################################
 # Status Check
 ################################################################################
 
@@ -247,32 +284,145 @@ show_status() {
     # Check individual services
     echo "Services:"
 
-    if curl -s "http://localhost:$VLLM_PORT/health" &>/dev/null; then
+    if is_vllm_healthy; then
         echo -e "  ${GREEN}●${NC} vLLM (port $VLLM_PORT) - running"
     else
         echo -e "  ${RED}○${NC} vLLM (port $VLLM_PORT) - not responding"
     fi
 
-    if curl -s "http://localhost:$TTS_PORT/health" &>/dev/null; then
+    if is_tts_healthy; then
         echo -e "  ${GREEN}●${NC} TTS (port $TTS_PORT) - running"
     else
         echo -e "  ${RED}○${NC} TTS (port $TTS_PORT) - not responding"
     fi
 
-    # Whisper uses WebSocket, check if port is open
-    if ss -tlnp 2>/dev/null | grep -q ":$WHISPER_PORT " || netstat -tlnp 2>/dev/null | grep -q ":$WHISPER_PORT "; then
+    if is_whisper_healthy; then
         echo -e "  ${GREEN}●${NC} Whisper (port $WHISPER_PORT) - running"
     else
         echo -e "  ${RED}○${NC} Whisper (port $WHISPER_PORT) - not responding"
     fi
 
-    if curl -sk "https://localhost:$WEB_HTTPS_PORT" &>/dev/null; then
+    if is_web_healthy; then
         echo -e "  ${GREEN}●${NC} Web Server (port $WEB_HTTPS_PORT) - running"
     else
         echo -e "  ${RED}○${NC} Web Server (port $WEB_HTTPS_PORT) - not responding"
     fi
 
     echo ""
+}
+
+################################################################################
+# Repair Functions
+################################################################################
+
+restart_service_in_pane() {
+    local service="$1"
+    local pane_idx
+    local cmd
+
+    pane_idx=$(get_pane_by_title "$service")
+    if [ -z "$pane_idx" ]; then
+        print_error "Could not find pane for service: $service"
+        return 1
+    fi
+
+    case "$service" in
+        vLLM)
+            cmd=$(cmd_vllm)
+            ;;
+        TTS)
+            cmd=$(cmd_tts)
+            ;;
+        Whisper)
+            cmd=$(cmd_whisper)
+            ;;
+        Web)
+            cmd=$(cmd_web)
+            ;;
+        *)
+            print_error "Unknown service: $service"
+            return 1
+            ;;
+    esac
+
+    print_info "Restarting $service in pane $pane_idx..."
+
+    # Send Ctrl+C to stop current process, then Enter to get past the "press Enter" prompt if present
+    tmux send-keys -t "$SESSION_NAME:0.$pane_idx" C-c
+    sleep 0.5
+    tmux send-keys -t "$SESSION_NAME:0.$pane_idx" Enter
+    sleep 0.5
+    tmux send-keys -t "$SESSION_NAME:0.$pane_idx" "$cmd" Enter
+
+    print_status "$service restart initiated"
+}
+
+repair_services() {
+    local services_to_repair=("$@")
+    local auto_detect=false
+
+    if [ ${#services_to_repair[@]} -eq 0 ]; then
+        auto_detect=true
+    fi
+
+    if ! is_session_running; then
+        print_error "tmux session '$SESSION_NAME' is not running"
+        print_info "Use '$0 start' to start all services"
+        exit 1
+    fi
+
+    if [ "$auto_detect" = true ]; then
+        print_info "Auto-detecting unhealthy services..."
+        echo ""
+
+        services_to_repair=()
+
+        if ! is_vllm_healthy; then
+            services_to_repair+=("vLLM")
+            echo -e "  ${RED}○${NC} vLLM - needs repair"
+        else
+            echo -e "  ${GREEN}●${NC} vLLM - healthy"
+        fi
+
+        if ! is_tts_healthy; then
+            services_to_repair+=("TTS")
+            echo -e "  ${RED}○${NC} TTS - needs repair"
+        else
+            echo -e "  ${GREEN}●${NC} TTS - healthy"
+        fi
+
+        if ! is_whisper_healthy; then
+            services_to_repair+=("Whisper")
+            echo -e "  ${RED}○${NC} Whisper - needs repair"
+        else
+            echo -e "  ${GREEN}●${NC} Whisper - healthy"
+        fi
+
+        if ! is_web_healthy; then
+            services_to_repair+=("Web")
+            echo -e "  ${RED}○${NC} Web - needs repair"
+        else
+            echo -e "  ${GREEN}●${NC} Web - healthy"
+        fi
+
+        echo ""
+    fi
+
+    if [ ${#services_to_repair[@]} -eq 0 ]; then
+        print_status "All services are healthy - nothing to repair"
+        return 0
+    fi
+
+    print_info "Repairing services: ${services_to_repair[*]}"
+    echo ""
+
+    for service in "${services_to_repair[@]}"; do
+        restart_service_in_pane "$service"
+    done
+
+    echo ""
+    print_status "Repair commands sent"
+    print_info "Use '$0 status' to check service health after startup"
 }
 
 ################################################################################
@@ -285,12 +435,13 @@ show_usage() {
     echo "Commands:"
     echo "  start       Start all services in tmux session (default)"
     echo "  stop        Stop the tmux session and all services"
-    echo "  restart     Restart all services"
+    echo "  restart     Restart all services (kills session and restarts)"
+    echo "  repair      Restart failed services in-place (auto-detects or specify)"
     echo "  status      Show status of all services"
     echo "  attach      Attach to the tmux session"
     echo "  logs        Show recent logs from all panes"
     echo ""
-    echo "Options:"
+    echo "Options for 'start':"
     echo "  --only-vllm       Start only vLLM server"
     echo "  --only-tts        Start only TTS server"
     echo "  --only-whisper    Start only Whisper server"
@@ -299,6 +450,13 @@ show_usage() {
     echo "  --no-tts          Start all except TTS"
     echo "  --no-whisper      Start all except Whisper"
     echo "  --no-web          Start all except web server"
+    echo ""
+    echo "Options for 'repair':"
+    echo "  vllm              Restart vLLM service"
+    echo "  tts               Restart TTS service"
+    echo "  whisper           Restart Whisper service"
+    echo "  web               Restart Web server"
+    echo "  (no args)         Auto-detect and repair unhealthy services"
     echo ""
     echo "Ports (configurable via environment):"
     echo "  VLLM_PORT=$VLLM_PORT"
@@ -311,6 +469,9 @@ show_usage() {
     echo "  $0                     # Start all services"
     echo "  $0 start --no-vllm    # Start TTS, Whisper, Web only"
     echo "  $0 stop               # Stop all services"
+    echo "  $0 repair             # Auto-detect and restart failed services"
+    echo "  $0 repair whisper     # Restart only whisper service"
+    echo "  $0 repair tts web     # Restart TTS and Web services"
     echo "  $0 attach             # Attach to session (Ctrl+B D to detach)"
     echo "  $0 status             # Check service status"
     echo ""
@@ -333,44 +494,49 @@ echo ""
 COMMAND="${1:-start}"
 shift 2>/dev/null || true
 
-# Parse options
-while [[ $# -gt 0 ]]; do
-    case $1 in
-        --only-vllm)
-            START_VLLM=true; START_TTS=false; START_WHISPER=false; START_WEB=false
-            shift ;;
-        --only-tts)
-            START_VLLM=false; START_TTS=true; START_WHISPER=false; START_WEB=false
-            shift ;;
-        --only-whisper)
-            START_VLLM=false; START_TTS=false; START_WHISPER=true; START_WEB=false
-            shift ;;
-        --only-web)
-            START_VLLM=false; START_TTS=false; START_WHISPER=false; START_WEB=true
-            shift ;;
-        --no-vllm)
-            START_VLLM=false
-            shift ;;
-        --no-tts)
-            START_TTS=false
-            shift ;;
-        --no-whisper)
-            START_WHISPER=false
-            shift ;;
-        --no-web)
-            START_WEB=false
-            shift ;;
-        -h|--help)
-            show_usage
-            exit 0
-            ;;
-        *)
-            print_error "Unknown option: $1"
-            echo "Use --help for usage"
-            exit 1
-            ;;
-    esac
-done
+# Store remaining args for commands that need them (like repair)
+REMAINING_ARGS=("$@")
+
+# Parse options (only for start command)
+if [ "$COMMAND" = "start" ]; then
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --only-vllm)
+                START_VLLM=true; START_TTS=false; START_WHISPER=false; START_WEB=false
+                shift ;;
+            --only-tts)
+                START_VLLM=false; START_TTS=true; START_WHISPER=false; START_WEB=false
+                shift ;;
+            --only-whisper)
+                START_VLLM=false; START_TTS=false; START_WHISPER=true; START_WEB=false
+                shift ;;
+            --only-web)
+                START_VLLM=false; START_TTS=false; START_WHISPER=false; START_WEB=true
+                shift ;;
+            --no-vllm)
+                START_VLLM=false
+                shift ;;
+            --no-tts)
+                START_TTS=false
+                shift ;;
+            --no-whisper)
+                START_WHISPER=false
+                shift ;;
+            --no-web)
+                START_WEB=false
+                shift ;;
+            -h|--help)
+                show_usage
+                exit 0
+                ;;
+            *)
+                print_error "Unknown option: $1"
+                echo "Use --help for usage"
+                exit 1
+                ;;
+        esac
+    done
+fi
 
 # Check dependencies
 check_dependencies
@@ -414,6 +580,33 @@ case $COMMAND in
         sleep 2
         start_session
         print_status "Demo stack restarted"
+        ;;
+
+    repair)
+        # Collect service names from remaining args
+        REPAIR_SERVICES=()
+        for arg in "${REMAINING_ARGS[@]}"; do
+            case "$arg" in
+                vllm|VLLM|vLLM)
+                    REPAIR_SERVICES+=("vLLM")
+                    ;;
+                tts|TTS)
+                    REPAIR_SERVICES+=("TTS")
+                    ;;
+                whisper|Whisper|WHISPER)
+                    REPAIR_SERVICES+=("Whisper")
+                    ;;
+                web|Web|WEB)
+                    REPAIR_SERVICES+=("Web")
+                    ;;
+                *)
+                    print_error "Unknown service: $arg"
+                    echo "Valid services: vllm, tts, whisper, web"
+                    exit 1
+                    ;;
+            esac
+        done
+        repair_services "${REPAIR_SERVICES[@]}"
         ;;
 
     status)
