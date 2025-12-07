@@ -3,6 +3,19 @@
 
 set -e
 
+# Virtual environment configuration
+VENV_DIR="${VENV_DIR:-$HOME/inference-venv}"
+
+# Activate virtual environment
+if [ -d "$VENV_DIR" ]; then
+    echo "Activating inference virtual environment..."
+    source "$VENV_DIR/bin/activate"
+else
+    echo "Warning: Virtual environment not found at $VENV_DIR"
+    echo "Run jetson_setup.sh first, or set VENV_DIR to your venv path"
+    exit 1
+fi
+
 # Configuration
 MODEL_PATH="${MODEL_PATH:-./deepseek-coder-v2-lite-instruct-fp8}"
 HOST="${HOST:-0.0.0.0}"

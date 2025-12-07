@@ -1,1 +1,1 @@
-Write a Python function that implements a binary search algorithm. Include docstrings and type hints.
+Only apply high torque when the joint is within ±0.05 [rad] of the target; otherwise move toward the target at a limited rate of 0.05 [rad/s].

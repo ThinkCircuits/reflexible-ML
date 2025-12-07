@@ -462,6 +462,86 @@
             margin-top: 5px;
         }
 
+        /* Push-to-Talk Panel */
+        .ptt-panel {
+            margin-top: 15px;
+            padding: 12px;
+            background: #0d1a2e;
+            border: 1px solid #1b3a5e;
+            border-radius: 8px;
+        }
+
+        .ptt-panel h4 {
+            color: #00d4ff;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ptt-panel h4::before {
+            content: '🎙️';
+        }
+
+        .ptt-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .ptt-controls select {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .ptt-btn {
+            padding: 15px 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            transition: all 0.15s;
+        }
+
+        .ptt-btn:active, .ptt-btn.recording {
+            background: #e94560 !important;
+            transform: scale(0.98);
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+        }
+
+        .ptt-btn.transcribing {
+            background: #ffc107 !important;
+            color: #1a1a2e;
+        }
+
+        .ptt-status {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .ptt-status.recording {
+            color: #e94560;
+            animation: pulse 0.5s infinite;
+        }
+
+        .ptt-status.transcribing {
+            color: #ffc107;
+        }
+
+        .ptt-status.connected {
+            color: #00c853;
+        }
+
+        .ptt-status.error {
+            color: #e94560;
+        }
+
         @media (max-width: 900px) {
             .main-layout {
                 grid-template-columns: 1fr;
@@ -484,6 +564,10 @@
             <div class="control-group">
                 <label for="ttsUrl">TTS API Endpoint</label>
                 <input type="text" id="ttsUrl" value="">
+            </div>
+            <div class="control-group">
+                <label for="whisperUrl">Whisper WS Endpoint</label>
+                <input type="text" id="whisperUrl" value="">
             </div>
             <div class="control-group">
                 <label for="modelName">Model Name</label>
@@ -539,6 +623,18 @@
                         <label for="interval">Interval:</label>
                         <input type="number" id="interval" value="5000" min="500" step="100">
                         <span>ms</span>
+                    </div>
+
+                    <!-- Push-to-Talk Panel -->
+                    <div class="ptt-panel">
+                        <h4>Voice Input (Push-to-Talk)</h4>
+                        <div class="ptt-controls">
+                            <select id="micSelect">
+                                <option value="">Loading microphones...</option>
+                            </select>
+                            <button id="pttBtn" class="btn-primary ptt-btn">Hold to Speak</button>
+                        </div>
+                        <div class="ptt-status" id="pttStatus">Click and hold to record voice input</div>
                     </div>
                 </div>
             </div>
@@ -637,6 +733,12 @@
         const testAudioBtn = document.getElementById('testAudioBtn');
         const audioUnlockStatus = document.getElementById('audioUnlockStatus');
 
+        // PTT (Push-to-Talk) elements
+        const whisperUrlInput = document.getElementById('whisperUrl');
+        const micSelect = document.getElementById('micSelect');
+        const pttBtn = document.getElementById('pttBtn');
+        const pttStatus = document.getElementById('pttStatus');
+
         // Stats elements
         const statTTFT = document.getElementById('statTTFT');
         const statLatency = document.getElementById('statLatency');
@@ -667,6 +769,13 @@
 
         // Avatar instance (created during init)
         let avatar = null;
+
+        // PTT (Push-to-Talk) State
+        let whisperWs = null;
+        let pttMediaRecorder = null;
+        let pttAudioChunks = [];
+        let isPTTRecording = false;
+        let selectedMicDeviceId = null;
 
         // Resolution presets
         const resolutionPresets = {
@@ -1105,6 +1214,244 @@
             }
         }
 
+        // ==================== Push-to-Talk (PTT) Functions ====================
+
+        // Enumerate microphones
+        async function enumerateMicrophones() {
+            try {
+                // Request permission first to get device labels
+                await navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => stream.getTracks().forEach(t => t.stop()));
+
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const mics = devices.filter(d => d.kind === 'audioinput');
+
+                micSelect.innerHTML = '';
+                if (mics.length === 0) {
+                    micSelect.innerHTML = '<option value="">No microphones found</option>';
+                    return;
+                }
+
+                mics.forEach((mic, idx) => {
+                    const option = document.createElement('option');
+                    option.value = mic.deviceId;
+                    option.textContent = mic.label || `Microphone ${idx + 1}`;
+                    micSelect.appendChild(option);
+                });
+
+                selectedMicDeviceId = mics[0].deviceId;
+            } catch (err) {
+                console.error('Error enumerating microphones:', err);
+                micSelect.innerHTML = '<option value="">Mic access denied</option>';
+                setPTTStatus('Microphone access denied', 'error');
+            }
+        }
+
+        // Set PTT status display
+        function setPTTStatus(text, state = '') {
+            pttStatus.textContent = text;
+            pttStatus.className = 'ptt-status' + (state ? ' ' + state : '');
+        }
+
+        // Connect to Whisper WebSocket server
+        function connectWhisperWS() {
+            if (whisperWs && whisperWs.readyState === WebSocket.OPEN) {
+                return Promise.resolve(whisperWs);
+            }
+
+            return new Promise((resolve, reject) => {
+                const wsUrl = whisperUrlInput.value;
+                if (!wsUrl) {
+                    reject(new Error('Whisper WebSocket URL not configured'));
+                    return;
+                }
+
+                console.log('[PTT] Connecting to Whisper:', wsUrl);
+                whisperWs = new WebSocket(wsUrl);
+
+                whisperWs.onopen = () => {
+                    console.log('[PTT] WebSocket connected');
+                    setPTTStatus('Connected to Whisper server', 'connected');
+                    resolve(whisperWs);
+                };
+
+                whisperWs.onclose = (e) => {
+                    console.log('[PTT] WebSocket closed:', e.code, e.reason);
+                    whisperWs = null;
+                    if (!isPTTRecording) {
+                        setPTTStatus('Disconnected from Whisper server');
+                    }
+                };
+
+                whisperWs.onerror = (e) => {
+                    console.error('[PTT] WebSocket error:', e);
+                    reject(new Error('WebSocket connection failed'));
+                };
+
+                whisperWs.onmessage = (e) => {
+                    handleWhisperMessage(e.data);
+                };
+
+                // Timeout connection attempt
+                setTimeout(() => {
+                    if (whisperWs && whisperWs.readyState === WebSocket.CONNECTING) {
+                        whisperWs.close();
+                        reject(new Error('Connection timeout'));
+                    }
+                }, 5000);
+            });
+        }
+
+        // Handle messages from Whisper server
+        function handleWhisperMessage(data) {
+            try {
+                const msg = JSON.parse(data);
+                console.log('[PTT] Received:', msg);
+
+                switch (msg.type) {
+                    case 'status':
+                        if (msg.status === 'transcribing') {
+                            setPTTStatus('Transcribing...', 'transcribing');
+                            pttBtn.classList.remove('recording');
+                            pttBtn.classList.add('transcribing');
+                            pttBtn.textContent = 'Processing...';
+                        } else if (msg.status === 'recording') {
+                            setPTTStatus('Recording...', 'recording');
+                        } else if (msg.status === 'receiving') {
+                            setPTTStatus(`Recording... (${msg.chunks} chunks)`, 'recording');
+                        }
+                        break;
+
+                    case 'transcription':
+                        const transcribedText = msg.text.trim();
+                        console.log('[PTT] Transcription:', transcribedText);
+
+                        // Reset button state
+                        pttBtn.classList.remove('recording', 'transcribing');
+                        pttBtn.textContent = 'Hold to Speak';
+
+                        if (transcribedText) {
+                            // Put transcription into prompt field
+                            promptInput.value = transcribedText;
+                            setPTTStatus(`Transcribed in ${msg.transcription_time_ms?.toFixed(0) || '?'}ms`, 'connected');
+
+                            // Auto-send to LLM
+                            sendToLLM();
+                        } else {
+                            setPTTStatus('No speech detected', 'error');
+                        }
+                        break;
+
+                    case 'error':
+                        console.error('[PTT] Server error:', msg.message);
+                        setPTTStatus('Error: ' + msg.message, 'error');
+                        pttBtn.classList.remove('recording', 'transcribing');
+                        pttBtn.textContent = 'Hold to Speak';
+                        break;
+
+                    case 'pong':
+                        setPTTStatus(`Connected (${msg.model})`, 'connected');
+                        break;
+                }
+            } catch (err) {
+                console.error('[PTT] Error parsing message:', err, data);
+            }
+        }
+
+        // Start PTT recording
+        async function startPTTRecording() {
+            if (isPTTRecording) return;
+
+            try {
+                // Connect to Whisper server first
+                await connectWhisperWS();
+
+                // Get microphone stream
+                const constraints = {
+                    audio: selectedMicDeviceId
+                        ? { deviceId: { exact: selectedMicDeviceId } }
+                        : true
+                };
+
+                const audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                // Determine supported MIME type
+                let mimeType = 'audio/webm;codecs=opus';
+                if (!MediaRecorder.isTypeSupported(mimeType)) {
+                    mimeType = 'audio/webm';
+                    if (!MediaRecorder.isTypeSupported(mimeType)) {
+                        mimeType = 'audio/ogg;codecs=opus';
+                        if (!MediaRecorder.isTypeSupported(mimeType)) {
+                            mimeType = ''; // Let browser choose
+                        }
+                    }
+                }
+
+                // Create MediaRecorder
+                const options = mimeType ? { mimeType } : {};
+                pttMediaRecorder = new MediaRecorder(audioStream, options);
+                pttAudioChunks = [];
+
+                pttMediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        pttAudioChunks.push(e.data);
+                        // Stream chunks to server
+                        if (whisperWs && whisperWs.readyState === WebSocket.OPEN) {
+                            whisperWs.send(e.data);
+                        }
+                    }
+                };
+
+                pttMediaRecorder.onstop = () => {
+                    // Stop all audio tracks
+                    audioStream.getTracks().forEach(t => t.stop());
+                };
+
+                // Tell server we're starting
+                whisperWs.send(JSON.stringify({
+                    type: 'start',
+                    format: mimeType.includes('webm') ? 'webm' : 'ogg',
+                    sampleRate: audioStream.getAudioTracks()[0].getSettings().sampleRate || 48000
+                }));
+
+                // Start recording with timeslice for streaming
+                pttMediaRecorder.start(250); // Send chunks every 250ms
+                isPTTRecording = true;
+
+                // Update UI
+                pttBtn.classList.add('recording');
+                pttBtn.textContent = 'Recording...';
+                setPTTStatus('Recording...', 'recording');
+
+            } catch (err) {
+                console.error('[PTT] Recording error:', err);
+                setPTTStatus('Error: ' + err.message, 'error');
+                pttBtn.classList.remove('recording');
+                pttBtn.textContent = 'Hold to Speak';
+            }
+        }
+
+        // Stop PTT recording
+        function stopPTTRecording() {
+            if (!isPTTRecording) return;
+            isPTTRecording = false;
+
+            if (pttMediaRecorder && pttMediaRecorder.state === 'recording') {
+                pttMediaRecorder.stop();
+            }
+
+            // Tell server to process the audio
+            if (whisperWs && whisperWs.readyState === WebSocket.OPEN) {
+                whisperWs.send(JSON.stringify({ type: 'stop' }));
+                setPTTStatus('Processing audio...', 'transcribing');
+                pttBtn.textContent = 'Processing...';
+            } else {
+                setPTTStatus('Connection lost', 'error');
+                pttBtn.classList.remove('recording');
+                pttBtn.textContent = 'Hold to Speak';
+            }
+        }
+
         // ==================== Camera Functions ====================
 
         function checkSecureContext() {
@@ -1487,13 +1834,48 @@
             }
         });
 
+        // PTT button event listeners - support mouse, touch, and prevent context menu
+        pttBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            startPTTRecording();
+        });
+        pttBtn.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            stopPTTRecording();
+        });
+        pttBtn.addEventListener('mouseleave', (e) => {
+            if (isPTTRecording) {
+                stopPTTRecording();
+            }
+        });
+        pttBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            startPTTRecording();
+        });
+        pttBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            stopPTTRecording();
+        });
+        pttBtn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
+
+        // Mic select change
+        micSelect.addEventListener('change', (e) => {
+            selectedMicDeviceId = e.target.value;
+        });
+
         // ==================== Initialization ====================
 
         function setDefaultUrls() {
             const origin = window.location.origin;
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host;
             apiUrlInput.value = `${origin}/v1/chat/completions`;
             // TTS proxied through /tts/* on same origin
             ttsUrlInput.value = `${origin}/tts`;
+            // Whisper WebSocket - default to port 8766 on same host
+            whisperUrlInput.value = `${wsProtocol}//${window.location.hostname}:8766`;
         }
 
         async function init() {
@@ -1502,6 +1884,8 @@
             avatar = new Avatar('#avatarContainer');
             await enumerateCameras();
             await initWebcam();
+            // Enumerate microphones for PTT
+            await enumerateMicrophones();
             // Check audio status for mobile
             checkAudioStatus();
         }

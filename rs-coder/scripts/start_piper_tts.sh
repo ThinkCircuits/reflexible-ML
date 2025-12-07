@@ -8,7 +8,8 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
 
 # Colors
 RED='\033[0;31m'
@@ -32,13 +33,13 @@ if curl -s http://localhost:$PORT/health &>/dev/null; then
 fi
 
 # Activate venv and run
-if [ ! -f "$SCRIPT_DIR/tts-venv/bin/python" ]; then
+if [ ! -f "$PROJECT_DIR/tts-venv/bin/python" ]; then
     echo -e "${RED}[!]${NC} TTS venv not found. Creating..."
-    python3 -m venv tts-venv
-    ./tts-venv/bin/pip install piper-tts
+    python3 -m venv "$PROJECT_DIR/tts-venv"
+    "$PROJECT_DIR/tts-venv/bin/pip" install piper-tts
 fi
 
 echo -e "${GREEN}[+]${NC} Starting Piper TTS server on port $PORT..."
 echo -e "${GREEN}[+]${NC} Model will be loaded once at startup for fast inference"
 echo ""
-exec "$SCRIPT_DIR/tts-venv/bin/python" "$SCRIPT_DIR/piper_tts_server.py" --port "$PORT" "$@"
+exec "$PROJECT_DIR/tts-venv/bin/python" "$SCRIPT_DIR/piper_tts_server.py" --port "$PORT" "$@"
